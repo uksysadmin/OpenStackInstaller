@@ -31,7 +31,7 @@ fi
 usage() {
 cat << USAGE
 Syntax
-    OSinstall.sh -N {private virtual network w/subnet} -s { network size } -n {number of networks} -I {public interface} -A {admin} -v {qemu | kvm}
+    OSinstall.sh -T {type} -N {private virtual network w/subnet} -s { network size } -n {number of networks} -I {public interface} -A {admin} -v {qemu | kvm}
 
     -T: Installation type: all (single node) | controller | compute
     -N: Private network the guests will use with subnet
@@ -61,7 +61,7 @@ DEFAULT_VIRT="qemu"
 DEFAULT_INSTALL="all"
 
 # Process Command Line
-while getopts N:s:n:I:A:v:hy opts
+while getopts T:N:s:n:I:A:v:hy opts
 do
   case $opts in
     T)
