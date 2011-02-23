@@ -31,7 +31,7 @@ fi
 usage() {
 cat << USAGE
 Syntax
-    OSinstall.sh -T {type} -N {private virtual network w/subnet} -s { network size } -n {number of networks} -I {public interface} -A {admin} -v {qemu | kvm}
+    OSinstall.sh -T {type} -N {private virtual network w/subnet} -s { network size } -n {number of networks} -I {public interface} -C {Controller Address} -A {admin} -v {qemu | kvm}
 
     -T: Installation type: all (single node) | controller | compute
     -N: Private network the guests will use with subnet
@@ -61,13 +61,13 @@ DEFAULT_VIRT="qemu"
 DEFAULT_INSTALL="all"
 
 # Process Command Line
-while getopts T:N:s:n:I:A:v:hy opts
+while getopts T:N:s:n:I:C:A:v:hy opts
 do
   case $opts in
     T)
-	INSTALL=${OPTARG} | tr [A-Z] [a-z]
+	INSTALL=$(echo "${OPTARG}" | tr [A-Z] [a-z])
 	case ${INSTALL} in
-		"all"|"single"|"controller"|"compute"|"node")
+		all|single|controller|compute|node)
 		;;
 	*)
 		usage
@@ -151,14 +151,15 @@ if [ -z ${CC_ADDR} ]
 then
 	# Check we're not a compute node install
 	case ${INSTALL} in
-		"all"|"single"|"controller")
+		all|single|controller)
 			# DEFAULT_INTERFACE=$(/sbin/route -n | grep ^0\.0\.0\.0 | awk '{print $8}')
 			CC_ADDR=$(/sbin/ifconfig ${INTERFACE} | awk '/inet addr/ {split ($2,A,":"); print A[2]}')
 			;;
 		*)
+			echo 
 			echo "You must specify the Cloud Controller Address (-C xxx.xxx.xxx.xxx) for a compute node install"
 			echo
-			usage
+			exit 1
 			;;
 	esac
 fi
@@ -190,23 +191,21 @@ fi
 
 # Packages to install per install type
 case ${INSTALL} in
-	"all"|"single")
+	all|single)
 		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute"
 		EXTRA_PACKAGES="euca2ools unzip qemu"
 		MYSQL_INSTALL=1
 		RABBITMQ_INSTALL=1
 		;;
-	"controller")
+	controller)
 		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network"
 		EXTRA_PACKAGES="euca2ools unzip qemu"
 		MYSQL_INSTALL=1
 		RABBITMQ_INSTALL=1
 		;;
-	"compute"|"node")
+	compute|node)
 		NOVA_PACKAGES="nova-compute"
 		EXTRA_PACKAGES="euca2ools unzip qemu"
-		MYSQL_INSTALL=0
-		RABBITMQ_INSTALL=0
 		;;
 esac
 
@@ -217,12 +216,12 @@ add-apt-repository ppa:nova-core/trunk 2>&1 >> ${LOGFILE}
 apt-get update 2>&1 >> ${LOGFILE}
 
 # Install based on type
-if [ ${RABBITMQ_INSTALL} ]
+if [ ! -z ${RABBITMQ_INSTALL} ]
 then
 	apt-get install -y rabbitmq-server 2>&1 >> ${LOGFILE}
 fi
 
-apt-get install -y ${PACKAGES} 2>&1 >> ${LOGFILE}
+apt-get install -y ${NOVA_PACKAGES} ${EXTRA_PACKAGES} 2>&1 >> ${LOGFILE}
 
 
 # Configure the /etc/nova/nova.conf file
@@ -246,7 +245,7 @@ cat > /etc/nova/nova.conf << EOF
 --public_interface=vnet0
 EOF
 
-if [ ${MYSQL_INSTALL} ]
+if [ ! -z ${MYSQL_INSTALL} ]
 then
 	echo "Configuring MySQL for OpenStack"
 
