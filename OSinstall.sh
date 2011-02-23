@@ -1,15 +1,26 @@
 #!/bin/bash
 
-# Author K. Jackson (kevin@linuxservices.co.uk) 18 Feb 2011
-# Feel free to edit!
-# It has been written to be easily understood - flowing simply from top to bottom to
-# aid future troubleshooting of your environment, rather than a "click next a few times" installation
+#    Author K. Jackson (kevin@linuxservices.co.uk) 18 Feb 2011
+#
+#    OSinstall.sh - Simple bash script installer for Openstack
+#    Copyright (C) 2011 Kevin Jackson
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 
-# Changelog
-# 23 Feb 2011: Added 3 node types to install: -T { all | controller | compute }
-
-# Script will either take arguments on the command line or install defaults
-# This will form the basis of an automated script to install the relevant components of OpenStack
+#    Script will either take arguments on the command line or install defaults
+#    This will form the basis of an automated script to install the relevant components of OpenStack
 
 # Check we're running as root
 if [ "$(id -u)" != "0" ]; then
