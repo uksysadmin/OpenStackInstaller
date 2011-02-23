@@ -287,8 +287,8 @@ done
 # Instructions
 cat << INSTRUCTIONS
 To set up your environment and a test VM execute the following:
-  nova-manage user admin ${ADMIN}
-  nova-manage project create myproject ${ADMIN}
+  sudo nova-manage user admin ${ADMIN}
+  sudo nova-manage project create myproject ${ADMIN}
   sudo nova-manage project zipfile myproject ${ADMIN}
   mkdir -p cloud/creds
   cd cloud/creds
