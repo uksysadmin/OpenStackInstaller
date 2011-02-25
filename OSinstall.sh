@@ -274,17 +274,25 @@ fi
 
 
 case ${INSTALL} in
-	"all"|"controller"|"single")
+	"all"|"single")
+		# Configure the networking for this environment
+		echo "Configuring OpenStack VM Network: ${VMNET} ${NUMBER_NETWORKS} ${NETWORK_SIZE}"
+		nova-manage db sync
+		nova-manage network create
+		service libvirt-bin restart 2>&1 >> ${LOGFILE}
+		;;
+	"controller")
 		# Configure the networking for this environment
 		echo "Configuring OpenStack VM Network: ${VMNET} ${NUMBER_NETWORKS} ${NETWORK_SIZE}"
 		nova-manage db sync
 		nova-manage network create
 		;;
+	"compute"|"node")
+		service libvirt-bin restart 2>&1 >> ${LOGFILE}
+		;;
 esac
 
 echo "Restarting service to finalize changes..."
-
-service libvirt-bin restart 2>&1 >> ${LOGFILE}
 
 for P in ${NOVA_PACKAGES}
 do
@@ -293,6 +301,10 @@ done
 
 
 # Instructions
+case ${INSTALL} in
+	"compute"|"node")
+		;;
+	*)
 cat << INSTRUCTIONS
 To set up your environment and a test VM execute the following:
   sudo nova-manage user admin ${ADMIN}
@@ -332,3 +344,5 @@ To run, check, connect and terminate an instance
 *****************************************************
 
 INSTRUCTIONS
+		;;
+esac
