@@ -154,6 +154,14 @@ then
 		all|single|controller)
 			# DEFAULT_INTERFACE=$(/sbin/route -n | grep ^0\.0\.0\.0 | awk '{print $8}')
 			CC_ADDR=$(/sbin/ifconfig ${INTERFACE} | awk '/inet addr/ {split ($2,A,":"); print A[2]}')
+
+			if [ -z ${CC_ADDR} ]
+                        then
+                                echo "Error, no IP set for ${INTERFACE}, your Public API interface you've chosen."
+                                exit 1
+                        fi
+
+
 			;;
 		*)
 			echo 
