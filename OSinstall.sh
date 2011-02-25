@@ -206,7 +206,7 @@ case ${INSTALL} in
 		RABBITMQ_INSTALL=1
 		;;
 	controller)
-		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network"
+		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute"
 		EXTRA_PACKAGES="euca2ools unzip qemu"
 		MYSQL_INSTALL=1
 		RABBITMQ_INSTALL=1
@@ -286,8 +286,10 @@ case ${INSTALL} in
 		echo "Configuring OpenStack VM Network: ${VMNET} ${NUMBER_NETWORKS} ${NETWORK_SIZE}"
 		nova-manage db sync
 		nova-manage network create
+		service libvirt-bin restart 2>&1 >> ${LOGFILE}
 		;;
 	"compute"|"node")
+		nova-manage db sync
 		service libvirt-bin restart 2>&1 >> ${LOGFILE}
 		;;
 esac
@@ -303,6 +305,15 @@ done
 # Instructions
 case ${INSTALL} in
 	"compute"|"node")
+HOST=$(hostname -s)
+MYIP=$(/sbin/ifconfig eth0 | awk '/inet addr/ {split ($2,A,":"); print A[2]}')
+cat << INSTRUCTIONS
+Ensure that the following is in DNS or in /etc/hosts
+
+# Host Entry to ensure controller can find compute node via hostname
+${MYIP} ${HOST} 
+
+INSTRUCTIONS
 		;;
 	*)
 cat << INSTRUCTIONS
