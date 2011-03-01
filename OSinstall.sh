@@ -250,7 +250,7 @@ cat > /etc/nova/nova.conf << EOF
 --network_size=${NETWORK_SIZE}
 --num_networks=${NUM_NETWORKS}
 --FAKE_subdomain=ec2
---public_interface=vnet0
+--public_interface=${INTERFACE}
 EOF
 
 if [ ! -z ${MYSQL_INSTALL} ]
