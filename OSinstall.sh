@@ -251,6 +251,8 @@ cat > /etc/nova/nova.conf << EOF
 --num_networks=${NUM_NETWORKS}
 --FAKE_subdomain=ec2
 --public_interface=${INTERFACE}
+--state_path=/var/lib/nova
+--lock_path=/var/lock/nova
 EOF
 
 if [ ! -z ${MYSQL_INSTALL} ]
