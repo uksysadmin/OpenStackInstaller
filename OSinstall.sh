@@ -53,7 +53,7 @@ touch /var/log/nova/nova-install.log
 # Defaults
 DEFAULT_ADMIN=kevinj
 DEFAULT_NETWORK_SIZE=64
-DEFAULT_NUM_NETWORKS=3
+DEFAULT_NUM_NETWORKS=1
 DEFAULT_VMNET="10.0.0.0/8"
 DEFAULT_MYSQL_PASS="nova"
 DEFAULT_INTERFACE=eth0
@@ -280,14 +280,14 @@ case ${INSTALL} in
 		# Configure the networking for this environment
 		echo "Configuring OpenStack VM Network: ${VMNET} ${NUMBER_NETWORKS} ${NETWORK_SIZE}"
 		nova-manage db sync
-		nova-manage network create
+		nova-manage network create ${VMNET}
 		service libvirt-bin restart 2>&1 >> ${LOGFILE}
 		;;
 	"controller")
 		# Configure the networking for this environment
 		echo "Configuring OpenStack VM Network: ${VMNET} ${NUMBER_NETWORKS} ${NETWORK_SIZE}"
 		nova-manage db sync
-		nova-manage network create
+		nova-manage network create ${VMNET}
 		service libvirt-bin restart 2>&1 >> ${LOGFILE}
 		;;
 	"compute"|"node")
