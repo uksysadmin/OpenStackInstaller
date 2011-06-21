@@ -354,7 +354,7 @@ To run, check, connect and terminate an instance
 
   euca-describe-instances
 
-  ssh -i cloud/keys/openstack.pem root@ipaddress
+  ssh -i cloud/creds/openstack.pem root@ipaddress
 
   euca-terminate-instances instanceid
 *****************************************************
