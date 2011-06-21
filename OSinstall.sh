@@ -220,7 +220,8 @@ esac
 # All installation types need to do the following
 echo "Setting up repos and installing software"
 apt-get install -y python-software-properties 2>&1 >> ${LOGFILE}
-add-apt-repository ppa:nova-core/trunk 2>&1 >> ${LOGFILE}
+#add-apt-repository ppa:nova-core/trunk 2>&1 >> ${LOGFILE}
+add-apt-repository ppa:openstack-release/2011.2 2>&1 >> ${LOGFILE}
 apt-get update 2>&1 >> ${LOGFILE}
 
 # Install based on type
