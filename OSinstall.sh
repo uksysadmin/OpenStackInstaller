@@ -22,6 +22,8 @@
 #    Script will either take arguments on the command line or install defaults
 #    This will form the basis of an automated script to install the relevant components of OpenStack
 
+export LANG=C
+
 # Check we're running as root
 if [ "$(id -u)" != "0" ]; then
    echo "This script must be run as root"
