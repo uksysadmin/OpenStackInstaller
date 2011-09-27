@@ -33,7 +33,7 @@ fi
 usage() {
 cat << USAGE
 Syntax
-    OSinstall.sh -T {type} -N {private virtual network w/subnet} -s { network size } -n {number of networks} -I {public interface} -C {Controller Address} -A {admin} -v {qemu | kvm}
+    OSinstall.sh -T {type} -N {private virtual network w/subnet} -s { network size } -n {number of networks} -I {public interface} -f {floating_range} -C {Controller Address} -A {admin} -v {qemu | kvm}
 
     -T: Installation type: all (single node) | controller | compute
     -N: Private network the guests will use with subnet
@@ -41,12 +41,38 @@ Syntax
     -s: Network size (IP address range on this network)
     -n: Number of networks to create
     -I: Public network interface
+    -f: Floating (Public) IP range
     -C: Cloud Controller Address (if left blank, will work it out but is required for node installs)
     -A: Admin username
     -v: Virtualization type: qemu for software, kvm for kvm (hardware)
 USAGE
 exit 1
 }
+
+mask2cidr() {
+    # Credit http://www.linuxquestions.org/questions/programming-9/bash-cidr-calculator-646701/
+    nbits=0
+    if [ ! -z "$1" ]
+    then
+	    IFS=.
+	    for dec in $1 ; do
+		case $dec in
+		    255) let nbits+=8;;
+		    254) let nbits+=7;;
+		    252) let nbits+=6;;
+		    248) let nbits+=5;;
+		    240) let nbits+=4;;
+		    224) let nbits+=3;;
+		    192) let nbits+=2;;
+		    128) let nbits+=1;;
+		    0);;
+		    *) echo "Error: $dec is not recognised"; exit 1
+		esac
+	    done
+    fi
+    echo "$nbits"
+}
+
 
 LOGFILE=/var/log/nova/nova-install.log
 mkdir -p /var/log/nova
@@ -62,8 +88,9 @@ DEFAULT_INTERFACE=eth0
 DEFAULT_VIRT="qemu"
 DEFAULT_INSTALL="all"
 
+
 # Process Command Line
-while getopts T:N:s:n:I:C:A:v:hy opts
+while getopts T:N:s:n:I:f:C:A:v:hy opts
 do
   case $opts in
     T)
@@ -87,6 +114,9 @@ do
 	;;
     I)
 	INTERFACE=${OPTARG}
+	;;
+    f)
+	FLOATING_RANGE=${OPTARG}
 	;;
     C)
 	CC_ADDR=${OPTARG}
@@ -149,6 +179,18 @@ then
 	INSTALL=${DEFAULT_INSTALL}
 fi
 
+# Work out DEFAULT_FLOATING from public interface
+_NETWORK=$(/sbin/route -n | grep ${INTERFACE} | egrep -v UG | awk '{print $1}')
+_NETMASK=$(/sbin/route -n | grep ${INTERFACE} | egrep -v UG | awk '{print $3}')
+_CIDR=$(mask2cidr $_NETMASK)
+DEFAULT_FLOATING="$_NETWORK/$_CIDR"
+
+if [ -z ${FLOATING_RANGE} ]
+then
+	FLOATING_RANGE=${DEFAULT_FLOATING}
+fi
+
+
 if [ -z ${CC_ADDR} ]
 then
 	# Check we're not a compute node install
@@ -183,6 +225,7 @@ OpenStack will be installed with these options:
   Admin user: ${ADMIN}
   Private Network: ${VMNET} ${NUM_NETWORKS} ${NETWORK_SIZE}
   Public Interface = ${INTERFACE}
+  Floating network = ${FLOATING_RANGE}
   Cloud Controller = ${CC_ADDR}
   Virtualization Type: ${VIRT}
 
@@ -222,8 +265,13 @@ esac
 # All installation types need to do the following
 echo "Setting up repos and installing software"
 apt-get install -y python-software-properties 2>&1 >> ${LOGFILE}
-#add-apt-repository ppa:nova-core/trunk 2>&1 >> ${LOGFILE}
-add-apt-repository ppa:openstack-release/2011.2 2>&1 >> ${LOGFILE}
+
+# For Diablo, this is part of Oneiric Ocelot, so check Ubuntu distribution and either add PPA or not
+if [ $(lsb_release -r | awk '{print $2}') != "11.10" ]
+then
+	echo "Not running Oneiric Ocelot 11.10, add PPA" >> ${LOGFILE}
+	add-apt-repository ppa:openstack-release/2011.3 2>&1 >> ${LOGFILE}
+fi
 apt-get update 2>&1 >> ${LOGFILE}
 
 # Install based on type
@@ -281,16 +329,18 @@ fi
 case ${INSTALL} in
 	"all"|"single")
 		# Configure the networking for this environment
-		echo "Configuring OpenStack VM Network: ${VMNET} ${NUMBER_NETWORKS} ${NETWORK_SIZE}"
+		echo "Configuring OpenStack VM Network: ${VMNET} ${NUM_NETWORKS} ${NETWORK_SIZE}"
 		nova-manage db sync
-		nova-manage network create ${VMNET}
+		nova-manage network create  ${VMNET} ${NUM_NETWORKS} ${NETWORK_SIZE}
+		nova-manage floating create --ip_range=${FLOATING_RANGE}
 		service libvirt-bin restart 2>&1 >> ${LOGFILE}
 		;;
 	"controller")
 		# Configure the networking for this environment
 		echo "Configuring OpenStack VM Network: ${VMNET} ${NUMBER_NETWORKS} ${NETWORK_SIZE}"
 		nova-manage db sync
-		nova-manage network create ${VMNET}
+		nova-manage network create ${VMNET} ${NUM_NETWORKS} ${NETWORK_SIZE}
+		nova-manage floating create --ip_range=${FLOATING_RANGE}
 		service libvirt-bin restart 2>&1 >> ${LOGFILE}
 		;;
 	"compute"|"node")
