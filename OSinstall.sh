@@ -304,6 +304,8 @@ cat > /etc/nova/nova.conf << EOF
 --public_interface=${INTERFACE}
 --state_path=/var/lib/nova
 --lock_path=/var/lock/nova
+--glance_host=${CC_ADDR}
+--image_service=nova.image.glance.GlanceImageService
 EOF
 
 if [ ! -z ${MYSQL_INSTALL} ]
@@ -374,6 +376,7 @@ INSTRUCTIONS
 cat << INSTRUCTIONS
 To set up your environment and a test VM execute the following:
   sudo nova-manage user admin ${ADMIN}
+  sudo nova-manage role add ${ADMIN} cloudadmin
   sudo nova-manage project create myproject ${ADMIN}
   sudo nova-manage project zipfile myproject ${ADMIN}
   mkdir -p cloud/creds
@@ -385,7 +388,7 @@ To set up your environment and a test VM execute the following:
 
 Example test UEC image:
   wget http://smoser.brickies.net/ubuntu/ttylinux-uec/ttylinux-uec-amd64-12.1_2.6.35-22_1.tar.gz
-  uec-publish-tarball ttylinux-uec-amd64-12.1_2.6.35-22_1.tar.gz mybucket
+  cloud-publish-tarball ttylinux-uec-amd64-12.1_2.6.35-22_1.tar.gz mybucket
 
 Add a keypair to your environment so you can access the guests using keys:
   euca-add-keypair openstack > cloud/creds/openstack.pem
