@@ -245,13 +245,13 @@ fi
 # Packages to install per install type
 case ${INSTALL} in
 	all|single)
-		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute"
+		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance"
 		EXTRA_PACKAGES="euca2ools unzip qemu"
 		MYSQL_INSTALL=1
 		RABBITMQ_INSTALL=1
 		;;
 	controller)
-		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute"
+		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance"
 		EXTRA_PACKAGES="euca2ools unzip qemu"
 		MYSQL_INSTALL=1
 		RABBITMQ_INSTALL=1
