@@ -333,7 +333,7 @@ case ${INSTALL} in
 		# Configure the networking for this environment
 		echo "Configuring OpenStack VM Network: ${VMNET} ${NUM_NETWORKS} ${NETWORK_SIZE}"
 		nova-manage db sync
-		nova-manage network create vmnet --fixed_range_v4=${VMNET}/${NETWORK_SIZE} --bridge_interface=${INTERFACE}
+		nova-manage network create vmnet --fixed_range_v4=${VMNET} --network_size=${NETWORK_SIZE} --bridge_interface=${INTERFACE}
 		nova-manage floating create --ip_range=${FLOATING_RANGE}
 		service libvirt-bin restart 2>&1 >> ${LOGFILE}
 		;;
