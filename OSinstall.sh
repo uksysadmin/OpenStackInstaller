@@ -359,9 +359,13 @@ fi
 
 echo "Restarting service to finalize changes..."
 
-for P in ${NOVA_PACKAGES}
+for P in `ls /etc/init.d/nova* /etc/init.d/glance*`
 do
- service ${P} restart 2>&1 >> ${LOGFILE}
+ SERVICE_NAME=`basename ${P}`
+ service ${SERVICE_NAME} restart 2>&1 >> ${LOGFILE}
+ if [ "$?" != "0" ]; then
+   service ${SERVICE_NAME} start 2>&1 >> ${LOGFILE}
+ fi 
 done
 
 
