@@ -292,7 +292,7 @@ cat > /etc/nova/nova.conf << EOF
 --state_path=/var/lib/nova
 --verbose
 --libvirt_type=${VIRT}
---sql_connection=mysql://root:nova@${CC_ADDR}/nova
+--sql_connection=mysql://root:${MYSQL_PASS}@${CC_ADDR}/nova
 --s3_host=${CC_ADDR}
 --rabbit_host=${CC_ADDR}
 --ec2_host=${CC_ADDR}
