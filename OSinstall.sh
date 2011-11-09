@@ -33,15 +33,16 @@ fi
 usage() {
 cat << USAGE
 Syntax
-    OSinstall.sh -T {type} -N {private virtual network w/subnet} -s { network size } -n {number of networks} -I {public interface} -f {floating_range} -C {Controller Address} -A {admin} -v {qemu | kvm}
+    OSinstall.sh -T {type} -s { network size } -n {number of networks} -p {public interface} -P {private interface} -f {floating_range} -F {fixed_range} -V {VLAN start} -C {Controller Address} -A {admin} -v {qemu | kvm}
 
     -T: Installation type: all (single node) | controller | compute
-    -N: Private network the guests will use with subnet
-	e.g. 10.0.0.0/8
     -s: Network size (IP address range on this network)
     -n: Number of networks to create
-    -I: Public network interface
+    -p: Public network interface
     -f: Floating (Public) IP range
+    -P: Private network interface
+    -F: Fixed (Private) IP range e.g. 10.0.0.0/8
+    -V: VLAN Start
     -C: Cloud Controller Address (if left blank, will work it out but is required for node installs)
     -A: Admin username
     -v: Virtualization type: qemu for software, kvm for kvm (hardware)
@@ -85,12 +86,14 @@ DEFAULT_NUM_NETWORKS=1
 DEFAULT_VMNET="10.0.0.0/8"
 DEFAULT_MYSQL_PASS="nova"
 DEFAULT_INTERFACE=eth0
+DEFAULT_PRIVATE_INTERFACE=eth1
+DEFAULT_VLAN_START=100
 DEFAULT_VIRT="qemu"
 DEFAULT_INSTALL="all"
 
 
 # Process Command Line
-while getopts T:N:s:n:I:f:C:A:v:hy opts
+while getopts T:N:s:n:p:f:P:F:V:C:A:v:hy opts
 do
   case $opts in
     T)
@@ -103,20 +106,26 @@ do
 		;;
 	esac
 	;;
-    N)
-	VMNET=${OPTARG}
-	;;
     s)
 	NETWORK_SIZE=${OPTARG}
         ;;
     n)
 	NUM_NETWORKS=${OPTARG}
 	;;
-    I)
+    p)
 	INTERFACE=${OPTARG}
 	;;
     f)
 	FLOATING_RANGE=${OPTARG}
+	;;
+    P)
+	PRIVATE_INTERFACE=${OPTARG}
+	;;
+    F)
+	VMNET=${OPTARG}
+	;;
+    V)
+	VLAN_START=${OPTARG}
 	;;
     C)
 	CC_ADDR=${OPTARG}
@@ -167,6 +176,16 @@ fi
 if [ -z ${INTERFACE} ]
 then
 	INTERFACE=${DEFAULT_INTERFACE}
+fi
+
+if [ -z ${PRIVATE_INTERFACE} ]
+then
+	PRIVATE_INTERFACE=${DEFAULT_PRIVATE_INTERFACE}
+fi
+
+if [ -z ${VLAN_START} ]
+then
+	VLAN_START=${DEFAULT_VLAN_START}
 fi
 
 if [ -z ${VIRT} ]
@@ -223,9 +242,11 @@ OpenStack will be installed with these options:
 
   Installation: ${INSTALL}
   Admin user: ${ADMIN}
-  Private Network: ${VMNET} ${NUM_NETWORKS} ${NETWORK_SIZE}
+  Networking: VLAN (${VLAN_START})
+  Private Interface = ${PRIVATE_INTERFACE}
+  >> Private Network: ${VMNET} ${NUM_NETWORKS} ${NETWORK_SIZE}
   Public Interface = ${INTERFACE}
-  Floating network = ${FLOATING_RANGE}
+  >> Public Floating network = ${FLOATING_RANGE}
   Cloud Controller = ${CC_ADDR}
   Virtualization Type: ${VIRT}
 
@@ -306,6 +327,9 @@ cat > /etc/nova/nova.conf << EOF
 --lock_path=/var/lock/nova
 --glance_host=${CC_ADDR}
 --image_service=nova.image.glance.GlanceImageService
+--glance_api_servers=${CC_ADDR}:9292
+--vlan_start=4025
+--vlan_interface=${PRIVATE_INTERFACE}
 EOF
 
 if [ ! -z ${MYSQL_INSTALL} ]
@@ -333,7 +357,7 @@ case ${INSTALL} in
 		# Configure the networking for this environment
 		echo "Configuring OpenStack VM Network: ${VMNET} ${NUM_NETWORKS} ${NETWORK_SIZE}"
 		nova-manage db sync
-		nova-manage network create vmnet --fixed_range_v4=${VMNET}/${NETWORK_SIZE} --bridge_interface=${INTERFACE}
+		nova-manage network create vmnet --fixed_range_v4=${VMNET} --network_size=${NETWORK_SIZE} --bridge_interface=${INTERFACE}
 		nova-manage floating create --ip_range=${FLOATING_RANGE}
 		service libvirt-bin restart 2>&1 >> ${LOGFILE}
 		;;
@@ -359,11 +383,26 @@ fi
 
 echo "Restarting service to finalize changes..."
 
-for P in ${NOVA_PACKAGES}
+for P in `ls /etc/init.d/nova*`
 do
- service ${P} restart 2>&1 >> ${LOGFILE}
+ SERVICE_NAME=`basename ${P}`
+ service ${SERVICE_NAME} restart 2>&1 >> ${LOGFILE}
+ if [ "$?" != "0" ]; then
+   service ${SERVICE_NAME} start 2>&1 >> ${LOGFILE}
+ fi 
 done
 
+if [[ -x /etc/init.d/glance-api ]]
+then
+  for P in `ls /etc/init.d/glance*`
+  do
+   SERVICE_NAME=`basename ${P}`
+   service ${SERVICE_NAME} restart 2>&1 >> ${LOGFILE}
+   if [ "$?" != "0" ]; then
+     service ${SERVICE_NAME} start 2>&1 >> ${LOGFILE}
+   fi 
+  done
+fi
 
 # Instructions
 case ${INSTALL} in
@@ -381,42 +420,49 @@ INSTRUCTIONS
 	*)
 cat << INSTRUCTIONS
 To set up your environment and a test VM execute the following:
-  sudo nova-manage user admin ${ADMIN}
-  sudo nova-manage role add ${ADMIN} cloudadmin
-  sudo nova-manage project create myproject ${ADMIN}
-  sudo nova-manage project zipfile myproject ${ADMIN}
-  mkdir -p cloud/creds
-  cd cloud/creds
-  unzip ~${ADMIN}/nova.zip
-  . novarc
-  cd
+
+  [On this host running OpenStack]
+    sudo nova-manage user admin ${ADMIN}
+    sudo nova-manage role add ${ADMIN} cloudadmin
+    sudo nova-manage project create myproject ${ADMIN}
+    sudo nova-manage project zipfile myproject ${ADMIN}
 
 
-Example test UEC image:
-  wget http://smoser.brickies.net/ubuntu/ttylinux-uec/ttylinux-uec-amd64-12.1_2.6.35-22_1.tar.gz
-  cloud-publish-tarball ttylinux-uec-amd64-12.1_2.6.35-22_1.tar.gz mybucket
 
-Add a keypair to your environment so you can access the guests using keys:
-  euca-add-keypair openstack > cloud/creds/openstack.pem
-  chmod 0600 cloud/creds/*
+  [On your client computer after you have downloaded Euca2ools (apt-get install euca2ools)]
 
-Set the security group defaults (iptables):
-  euca-authorize default -P tcp -p 22 -s 0.0.0.0/0
-  euca-authorize default -P tcp -p 80 -s 0.0.0.0/0
-  euca-authorize default -P tcp -p 8080 -s 0.0.0.0/0
-  euca-authorize default -P icmp -t -1:-1
+    scp ${ADMIN}@`hostname`:nova.zip .
+    mkdir -p cloud/creds
+    cd cloud/creds
+    unzip ~${ADMIN}/nova.zip
+    . novarc
+    cd
+
+    Example test UEC image:
+    wget http://smoser.brickies.net/ubuntu/ttylinux-uec/ttylinux-uec-amd64-12.1_2.6.35-22_1.tar.gz
+    cloud-publish-tarball ttylinux-uec-amd64-12.1_2.6.35-22_1.tar.gz mybucket
+
+    Add a keypair to your environment so you can access the guests using keys:
+      euca-add-keypair openstack > cloud/creds/openstack.pem
+      chmod 0600 cloud/creds/*
+
+    Set the security group defaults (iptables):
+      euca-authorize default -P tcp -p 22 -s 0.0.0.0/0
+      euca-authorize default -P tcp -p 80 -s 0.0.0.0/0
+      euca-authorize default -P tcp -p 8080 -s 0.0.0.0/0
+      euca-authorize default -P icmp -t -1:-1
 
 
-*****************************************************
-To run, check, connect and terminate an instance
-  euca-run-instances \$emi -k openstack -t m1.tiny
+    *****************************************************
+    To run, check, connect and terminate an instance
+      euca-run-instances \$emi -k openstack -t m1.tiny
 
-  euca-describe-instances
+      euca-describe-instances
 
-  ssh -i cloud/creds/openstack.pem root@ipaddress
+      ssh -i cloud/creds/openstack.pem root@ipaddress
 
-  euca-terminate-instances instanceid
-*****************************************************
+      euca-terminate-instances instanceid
+    *****************************************************
 
 INSTRUCTIONS
 		;;
