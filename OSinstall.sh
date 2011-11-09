@@ -328,7 +328,7 @@ cat > /etc/nova/nova.conf << EOF
 --glance_host=${CC_ADDR}
 --image_service=nova.image.glance.GlanceImageService
 --glance_api_servers=${CC_ADDR}:9292
---vlan_start=4025
+--vlan_start=${VLAN_START}
 --vlan_interface=${PRIVATE_INTERFACE}
 EOF
 
