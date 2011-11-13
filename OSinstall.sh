@@ -317,6 +317,7 @@ cat > /etc/nova/nova.conf << EOF
 --s3_host=${CC_ADDR}
 --rabbit_host=${CC_ADDR}
 --ec2_host=${CC_ADDR}
+--ec2_dmz_host=${CC_ADDR}
 --ec2_url=http://${CC_ADDR}:8773/services/Cloud
 --fixed_range=${VMNET}
 --network_size=${NETWORK_SIZE}
