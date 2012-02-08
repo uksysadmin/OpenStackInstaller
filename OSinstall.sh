@@ -80,7 +80,8 @@ mkdir -p /var/log/nova
 touch /var/log/nova/nova-install.log
 
 # Defaults
-DEFAULT_ADMIN=openstack
+DEFAULT_ADMIN=demo
+DEFAULT_KEYSTONE_ADMIN_TOKEN=999888777666
 DEFAULT_NETWORK_SIZE=64
 DEFAULT_NUM_NETWORKS=1
 DEFAULT_VMNET="10.0.0.0/8"
@@ -397,6 +398,10 @@ case ${INSTALL} in
 esac
 
 # Grab config files from GitHub.com/uksysadmin/OpenStackInstaller
+wget -O /tmp/api-paste.ini https://github.com/uksysadmin/OpenStackInstaller/configs/api-paste.ini
+sed -i "s/%CC_ADDR%/$CC_ADDR/g" /tmp/api-paste.ini
+rm -f /etc/nova/api-paste.ini
+cp /tmp/api-paste.ini /etc/nova/api-paste.ini
 
 # Modify Authentication
 if [ -f /etc/nova/api-paste.ini ]
