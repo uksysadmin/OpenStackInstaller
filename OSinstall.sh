@@ -75,6 +75,19 @@ mask2cidr() {
 }
 
 
+glance_install() {
+	# Configure glance configs
+	# Configure
+cat >> /etc/glance/glance-api.conf < EOF
+
+[paste_deploy]
+flavor = keystone
+EOF
+
+cat >> /etc/glance/glance-registry.conf < EOF
+EOF
+}
+
 LOGFILE=/var/log/nova/nova-install.log
 mkdir -p /var/log/nova
 touch /var/log/nova/nova-install.log
@@ -402,12 +415,6 @@ wget -O /tmp/api-paste.ini https://github.com/uksysadmin/OpenStackInstaller/conf
 sed -i "s/%CC_ADDR%/$CC_ADDR/g" /tmp/api-paste.ini
 rm -f /etc/nova/api-paste.ini
 cp /tmp/api-paste.ini /etc/nova/api-paste.ini
-
-# Modify Authentication
-if [ -f /etc/nova/api-paste.ini ]
-then
-	sed -i "s/authenticate\ /ec2noauth /g" /etc/nova/api-paste.ini
-fi
 
 echo "Restarting service to finalize changes..."
 
