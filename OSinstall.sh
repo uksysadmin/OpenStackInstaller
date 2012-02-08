@@ -80,12 +80,12 @@ mkdir -p /var/log/nova
 touch /var/log/nova/nova-install.log
 
 # Defaults
-DEFAULT_ADMIN=kevinj
+DEFAULT_ADMIN=openstack
 DEFAULT_NETWORK_SIZE=64
 DEFAULT_NUM_NETWORKS=1
 DEFAULT_VMNET="10.0.0.0/8"
-DEFAULT_MYSQL_PASS="nova"
-DEFAULT_INTERFACE=eth0
+DEFAULT_MYSQL_PASS="openstack"
+DEFAULT_PUBLIC_INTERFACE=eth0
 DEFAULT_PRIVATE_INTERFACE=eth1
 DEFAULT_VLAN_START=100
 DEFAULT_VIRT="qemu"
@@ -113,7 +113,7 @@ do
 	NUM_NETWORKS=${OPTARG}
 	;;
     p)
-	INTERFACE=${OPTARG}
+	PUBLIC_INTERFACE=${OPTARG}
 	;;
     f)
 	FLOATING_RANGE=${OPTARG}
@@ -173,9 +173,9 @@ then
 	NUM_NETWORKS=${DEFAULT_NUM_NETWORKS}
 fi
 
-if [ -z ${INTERFACE} ]
+if [ -z ${PUBLIC_INTERFACE} ]
 then
-	INTERFACE=${DEFAULT_INTERFACE}
+	INTERFACE=${DEFAULT_PUBLIC_INTERFACE}
 fi
 
 if [ -z ${PRIVATE_INTERFACE} ]
@@ -199,8 +199,8 @@ then
 fi
 
 # Work out DEFAULT_FLOATING from public interface
-_NETWORK=$(/sbin/route -n | grep ${INTERFACE} | egrep -v UG | awk '{print $1}')
-_NETMASK=$(/sbin/route -n | grep ${INTERFACE} | egrep -v UG | awk '{print $3}')
+_NETWORK=$(/sbin/route -n | grep ${PUBLIC_INTERFACE} | egrep -v UG | awk '{print $1}')
+_NETMASK=$(/sbin/route -n | grep ${PUBLIC_INTERFACE} | egrep -v UG | awk '{print $3}')
 _CIDR=$(mask2cidr $_NETMASK)
 DEFAULT_FLOATING="$_NETWORK/$_CIDR"
 
@@ -215,8 +215,8 @@ then
 	# Check we're not a compute node install
 	case ${INSTALL} in
 		all|single|controller)
-			# DEFAULT_INTERFACE=$(/sbin/route -n | grep ^0\.0\.0\.0 | awk '{print $8}')
-			CC_ADDR=$(/sbin/ifconfig ${INTERFACE} | awk '/inet addr/ {split ($2,A,":"); print A[2]}')
+			# DEFAULT_PUBLIC_INTERFACE=$(/sbin/route -n | grep ^0\.0\.0\.0 | awk '{print $8}')
+			CC_ADDR=$(/sbin/ifconfig ${PUBLIC_INTERFACE} | awk '/inet addr/ {split ($2,A,":"); print A[2]}')
 
 			if [ -z ${CC_ADDR} ]
                         then
@@ -238,18 +238,27 @@ fi
 
 # Verification (if -y isn't specified)
 cat << CONFIG
+OpenStack Essex Release: OpenStack with Keystone and Glance
+
 OpenStack will be installed with these options:
 
   Installation: ${INSTALL}
-  Admin user: ${ADMIN}
   Networking: VLAN (${VLAN_START})
   Private Interface = ${PRIVATE_INTERFACE}
   >> Private Network: ${VMNET} ${NUM_NETWORKS} ${NETWORK_SIZE}
-  Public Interface = ${INTERFACE}
+  Public Interface = ${PUBLIC_INTERFACE}
   >> Public Floating network = ${FLOATING_RANGE}
-  Cloud Controller = ${CC_ADDR}
+  Cloud Controller (API, Keystone + Glance) = ${CC_ADDR}
   Virtualization Type: ${VIRT}
 
+  Account Credentials
+	Tenancy: admin
+	Role: Admin
+	Credentials: admin:admin
+
+	Tenancy: ${TENANT}
+	Role: Member, Admin
+	Credentials demo:${TENANT}
 CONFIG
 
 if [ -z ${AUTO} ]
@@ -266,32 +275,32 @@ fi
 # Packages to install per install type
 case ${INSTALL} in
 	all|single)
-		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance"
-		EXTRA_PACKAGES="euca2ools unzip qemu"
+		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance keystone"
+		EXTRA_PACKAGES="euca2ools unzip qemu ntp python-dateutil"
 		MYSQL_INSTALL=1
 		RABBITMQ_INSTALL=1
 		;;
 	controller)
-		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance"
-		EXTRA_PACKAGES="euca2ools unzip qemu"
+		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance keystone"
+		EXTRA_PACKAGES="euca2ools unzip qemu ntp python-dateutil"
 		MYSQL_INSTALL=1
 		RABBITMQ_INSTALL=1
 		;;
 	compute|node)
-		NOVA_PACKAGES="nova-compute"
-		EXTRA_PACKAGES="euca2ools unzip qemu"
+		NOVA_PACKAGES="nova-compute nova-network python-keystone"
+		EXTRA_PACKAGES="euca2ools unzip qemu ntp python-dateutil"
 		;;
 esac
 
 # All installation types need to do the following
 echo "Setting up repos and installing software"
-apt-get install -y python-software-properties 2>&1 >> ${LOGFILE}
 
-# For Diablo, this is part of Oneiric Ocelot, so check Ubuntu distribution and either add PPA or not
-if [ $(lsb_release -r | awk '{print $2}') != "11.10" ]
+# For Essex, this is part of Ubuntu 12.04
+if [ $(lsb_release -r | awk '{print $2}') != "12.04" ]
 then
-	echo "Not running Oneiric Ocelot 11.10, add PPA" >> ${LOGFILE}
-	add-apt-repository ppa:openstack-release/2011.3 2>&1 >> ${LOGFILE}
+	apt-get install -y python-software-properties 2>&1 >> ${LOGFILE}
+	echo "Not running Ubuntu Precise Pangolin 12.04, add Essex Trunk PPA" >> ${LOGFILE}
+	add-apt-repository ppa:openstack-core/trunk 2>&1 >> ${LOGFILE}
 fi
 apt-get update 2>&1 >> ${LOGFILE}
 
@@ -309,11 +318,14 @@ cat > /etc/nova/nova.conf << EOF
 --daemonize=1
 --dhcpbridge_flagfile=/etc/nova/nova.conf
 --dhcpbridge=/usr/bin/nova-dhcpbridge
+--force_dhcp_release
 --logdir=/var/log/nova
 --state_path=/var/lib/nova
 --verbose
+--connection_type=libvirt
 --libvirt_type=${VIRT}
---sql_connection=mysql://root:nova@${CC_ADDR}/nova
+--libvirt_use_virtio_for_bridges
+--sql_connection=mysql://nova:${MYSQL_PASS}@${CC_ADDR}/nova
 --s3_host=${CC_ADDR}
 --rabbit_host=${CC_ADDR}
 --ec2_host=${CC_ADDR}
@@ -324,6 +336,7 @@ cat > /etc/nova/nova.conf << EOF
 --num_networks=${NUM_NETWORKS}
 --FAKE_subdomain=ec2
 --public_interface=${INTERFACE}
+--auto_assign_floating_ip
 --state_path=/var/lib/nova
 --lock_path=/var/lock/nova
 --glance_host=${CC_ADDR}
@@ -331,14 +344,17 @@ cat > /etc/nova/nova.conf << EOF
 --glance_api_servers=${CC_ADDR}:9292
 --vlan_start=${VLAN_START}
 --vlan_interface=${PRIVATE_INTERFACE}
+--iscsi_helper=tgtadm
+--root_helper=sudo nova-rootwrap
 EOF
 
 if [ ! -z ${MYSQL_INSTALL} ]
 then
 	echo "Configuring MySQL for OpenStack"
 
-	# MySQL
-	MYSQL_PASS=nova
+	# MySQL - set root user in MySQL to $MYSQL_PASS
+	# which we then use to set up nova, keystone and glance databases with the same $MYSQL_PASS
+
 	cat <<MYSQL_PRESEED | debconf-set-selections
 mysql-server-5.1 mysql-server/root_password password $MYSQL_PASS
 mysql-server-5.1 mysql-server/root_password_again password $MYSQL_PASS
@@ -347,9 +363,13 @@ MYSQL_PRESEED
 	apt-get install -y mysql-server 2>&1 >> ${LOGFILE}
 	sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/my.cnf
 	service mysql restart
-	mysql -uroot -p$MYSQL_PASS -e 'CREATE DATABASE nova;'
-	mysql -uroot -p$MYSQL_PASS -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;"
-	mysql -uroot -p$MYSQL_PASS -e "SET PASSWORD FOR 'root'@'%' = PASSWORD('$MYSQL_PASS');"
+
+	for D in nova glance keystone
+	do
+		mysql -uroot -p$MYSQL_PASS -e 'CREATE DATABASE $D;'
+		mysql -uroot -p$MYSQL_PASS -e "GRANT ALL PRIVILEGES ON $D.* TO '$D'@'%' WITH GRANT OPTION;"
+		mysql -uroot -p$MYSQL_PASS -e "SET PASSWORD FOR '$D'@'%' = PASSWORD('$MYSQL_PASS');"
+	done
 fi
 
 
@@ -375,6 +395,8 @@ case ${INSTALL} in
 		service libvirt-bin restart 2>&1 >> ${LOGFILE}
 		;;
 esac
+
+# Grab config files from GitHub.com/uksysadmin/OpenStackInstaller
 
 # Modify Authentication
 if [ -f /etc/nova/api-paste.ini ]
