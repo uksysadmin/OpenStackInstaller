@@ -152,8 +152,8 @@ glance_install() {
 	cp configs/glance* $TMPAREA
 
 	# Configure files (sed info in)
-	sed -i "s/%CC_ADDR%/$CC_ADDR/g' $TMPAREA/*.*
-	sed -i "s/%ADMIN_TOKEN%/$KEYSTONE_ADMIN_TOKEN/g' $TMPAREA/*.*
+	sed -i "s/%CC_ADDR%/$CC_ADDR/g" $TMPAREA/*.*
+	sed -i "s/%ADMIN_TOKEN%/$KEYSTONE_ADMIN_TOKEN/g" $TMPAREA/*.*
 
 	# Put in place
 	rm -f /etc/glance/glance.*
@@ -171,8 +171,8 @@ keystone_install() {
 	cp configs/keystone.conf $TMPAREA
 
 	# Configure files (sed info in)
-	sed -i "s/%CC_ADDR%/$CC_ADDR/g' $TMPAREA/*.*
-	sed -i "s/%MYSQL_PASS%/$MYSQL_PASS/g' $TMPAREA/*.*
+	sed -i "s/%CC_ADDR%/$CC_ADDR/g" $TMPAREA/*.*
+	sed -i "s/%MYSQL_PASS%/$MYSQL_PASS/g" $TMPAREA/*.*
 
 	# Put in place
 	rm -f /etc/keystone/keystone.conf
