@@ -100,7 +100,7 @@ cat > /etc/nova/nova.conf << EOF
 --network_size=${NETWORK_SIZE}
 --num_networks=${NUM_NETWORKS}
 --FAKE_subdomain=ec2
---public_interface=${INTERFACE}
+--public_interface=${PUBLIC_INTERFACE}
 --auto_assign_floating_ip
 --state_path=/var/lib/nova
 --lock_path=/var/lock/nova
@@ -341,7 +341,7 @@ fi
 
 if [ -z ${PUBLIC_INTERFACE} ]
 then
-	INTERFACE=${DEFAULT_PUBLIC_INTERFACE}
+	PUBLIC_INTERFACE=${DEFAULT_PUBLIC_INTERFACE}
 fi
 
 if [ -z ${PRIVATE_INTERFACE} ]
@@ -396,7 +396,7 @@ then
 
 			if [ -z ${CC_ADDR} ]
                         then
-                                echo "Error, no IP set for ${INTERFACE}, your Public API interface you've chosen."
+                                echo "Error, no IP set for ${PUBLIC_INTERFACE}, your Public API interface you've chosen."
                                 exit 1
                         fi
 
