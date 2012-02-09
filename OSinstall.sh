@@ -448,6 +448,15 @@ then
 	fi
 fi
 
+# Libc6 Presents an interactive session question - override
+cat <<LIBC6_PRESEED | debconf-set-selections
+libc6   glibc/upgrade   boolean true
+libc6:amd64     glibc/upgrade   boolean true
+libc6   libraries/restart-without-asking        boolean true
+libc6:amd64     libraries/restart-without-asking        boolean true
+LIBC6_PRESEED
+
+
 # Packages to install per install type
 case ${INSTALL} in
 	all|single)
