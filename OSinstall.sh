@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #    Author K. Jackson (kevin@linuxservices.co.uk) 18 Feb 2011
+#    Updated: February 2012 for Essex / Precise Installs
 #
 #    OSinstall.sh - Simple bash script installer for Openstack
 #    Copyright (C) 2011 Kevin Jackson
@@ -33,19 +34,20 @@ fi
 usage() {
 cat << USAGE
 Syntax
-    OSinstall.sh -T {type} -s { network size } -n {number of networks} -p {public interface} -P {private interface} -f {floating_range} -F {fixed_range} -V {VLAN start} -C {Controller Address} -A {admin} -v {qemu | kvm}
+    OSinstall.sh -T {type} -s { network size } -n {number of networks} -p {public interface} -P {private interface} -f {floating_range} -F {fixed_range} -V {VLAN start} -C {Controller Address} -A {admin} -v {qemu | kvm} -t {default tenancy}
 
     -T: Installation type: all (single node) | controller | compute
     -s: Network size (IP address range on this network)
     -n: Number of networks to create
-    -p: Public network interface
-    -f: Floating (Public) IP range
-    -P: Private network interface
-    -F: Fixed (Private) IP range e.g. 10.0.0.0/8
+    -P: Public network interface
+    -F: Floating (Public) IP range
+    -p: Private network interface
+    -f: Fixed (Private) IP range e.g. 10.0.0.0/8
     -V: VLAN Start
     -C: Cloud Controller Address (if left blank, will work it out but is required for node installs)
     -A: Admin username
     -v: Virtualization type: qemu for software, kvm for kvm (hardware)
+    -t: Tenancy (Project)
 USAGE
 exit 1
 }
@@ -74,18 +76,164 @@ mask2cidr() {
     echo "$nbits"
 }
 
+configure_nova() {
+
+# Configure the /etc/nova/nova.conf file
+cat > /etc/nova/nova.conf << EOF
+--daemonize=1
+--dhcpbridge_flagfile=/etc/nova/nova.conf
+--dhcpbridge=/usr/bin/nova-dhcpbridge
+--force_dhcp_release
+--logdir=/var/log/nova
+--state_path=/var/lib/nova
+--verbose
+--connection_type=libvirt
+--libvirt_type=${VIRT}
+--libvirt_use_virtio_for_bridges
+--sql_connection=mysql://nova:${MYSQL_PASS}@${CC_ADDR}/nova
+--s3_host=${CC_ADDR}
+--rabbit_host=${CC_ADDR}
+--ec2_host=${CC_ADDR}
+--ec2_dmz_host=${CC_ADDR}
+--ec2_url=http://${CC_ADDR}:8773/services/Cloud
+--fixed_range=${VMNET}
+--network_size=${NETWORK_SIZE}
+--num_networks=${NUM_NETWORKS}
+--FAKE_subdomain=ec2
+--public_interface=${INTERFACE}
+--auto_assign_floating_ip
+--state_path=/var/lib/nova
+--lock_path=/var/lock/nova
+--glance_host=${CC_ADDR}
+--image_service=nova.image.glance.GlanceImageService
+--glance_api_servers=${CC_ADDR}:9292
+--vlan_start=${VLAN_START}
+--vlan_interface=${PRIVATE_INTERFACE}
+--iscsi_helper=tgtadm
+--root_helper=sudo nova-rootwrap
+EOF
+
+	cp configs/api-paste.ini /tmp
+	sed -i "s/%CC_ADDR%/$CC_ADDR/g" /tmp/api-paste.ini
+	sed -i "s/%ADMIN_TOKEN%/$KEYSTONE_ADMIN_TOKEN/g" /tmp/api-paste.ini
+	rm -f /etc/nova/api-paste.ini
+	cp /tmp/api-paste.ini /etc/nova/api-paste.ini
+}
+
+mysql_install() {
+	echo "Configuring MySQL for OpenStack"
+
+	# MySQL - set root user in MySQL to $MYSQL_PASS
+	# which we then use to set up nova, keystone and glance databases with the same $MYSQL_PASS
+
+	cat <<MYSQL_PRESEED | debconf-set-selections
+mysql-server-5.1 mysql-server/root_password password $MYSQL_PASS
+mysql-server-5.1 mysql-server/root_password_again password $MYSQL_PASS
+mysql-server-5.1 mysql-server/start_on_boot boolean true
+MYSQL_PRESEED
+	apt-get install -y mysql-server 2>&1 >> ${LOGFILE}
+	sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/my.cnf
+	service mysql restart
+
+	# Create Databases
+	for D in nova glance keystone
+	do
+		mysql -uroot -p$MYSQL_PASS -e 'CREATE DATABASE $D;'
+		mysql -uroot -p$MYSQL_PASS -e "GRANT ALL PRIVILEGES ON $D.* TO '$D'@'%' WITH GRANT OPTION;"
+		mysql -uroot -p$MYSQL_PASS -e "SET PASSWORD FOR '$D'@'%' = PASSWORD('$MYSQL_PASS');"
+	done
+}
 
 glance_install() {
 	# Configure glance configs
-	# Configure
-cat >> /etc/glance/glance-api.conf < EOF
+	# Grab from local github repo
+	TMPAREA=tmp/glance_OSI
+	rm -rf $TMPAREA
+	cp configs/glance* $TMPAREA
 
-[paste_deploy]
-flavor = keystone
-EOF
+	# Configure files (sed info in)
+	sed -i "s/%CC_ADDR%/$CC_ADDR/g' $TMPAREA/*.*
+	sed -i "s/%ADMIN_TOKEN%/$KEYSTONE_ADMIN_TOKEN/g' $TMPAREA/*.*
 
-cat >> /etc/glance/glance-registry.conf < EOF
-EOF
+	# Put in place
+	rm -f /etc/glance/glance.*
+	cp $TMPAREA/* /etc/glance
+
+	stop glance-registry
+	start glance-registry
+}
+
+keystone_install() {
+	# Configure keystone configs
+	# Grab from local github repo
+	TMPAREA=tmp/keystone_OSI
+	rm -rf $TMPAREA
+	cp configs/keystone.conf $TMPAREA
+
+	# Configure files (sed info in)
+	sed -i "s/%CC_ADDR%/$CC_ADDR/g' $TMPAREA/*.*
+	sed -i "s/%MYSQL_PASS%/$MYSQL_PASS/g' $TMPAREA/*.*
+
+	# Put in place
+	rm -f /etc/keystone/keystone.conf
+	cp $TMPAREA/keystone.conf /etc/keystone
+
+	stop keystone
+	start keystone
+	
+	# Sync Database
+	keystone-manage sync_database
+
+	# Create required endpoints, roles and credentials
+	sudo keystone-manage service add nova compute 'OpenStack Compute Service'
+	sudo keystone-manage service add swift object-store 'OpenStack Object Storage Service'
+	sudo keystone-manage service add glance image-service 'OpenStack Image Service'
+	sudo keystone-manage service add keystone identity-service 'OpenStack Identity Service'
+
+
+	sudo keystone-manage endpointTemplates add nova nova http://$CC_ADDR:8774/v1.1/%tenant_id% http://$CC_ADDR:8774/v1.1/%tenant_id% http://$CC_ADDR:8774/v1.1/%tenant_id% 1 1
+	sudo keystone-manage endpointTemplates add nova glance http://$CC_ADDR:9292/v1 http://$CC_ADDR:9292/v1 http://$CC_ADDR:9292/v1 1 1
+	sudo keystone-manage endpointTemplates add nova swift https://$CC_ADDR:8443/v1/AUTH_%tenant_id% https://$CC_ADDR:8443/v1/ https://$CC_ADDR:8443/v1/AUTH_%tenant_id% 1 1
+	sudo keystone-manage endpointTemplates add nova keystone http://$CC_ADDR:5000/v2.0 http://$CC_ADDR:35357/v2.0 http://$CC_ADDR:5000/v2.0 1 1
+
+
+	# Add Tenants
+	sudo keystone-manage tenant add admin
+	sudo keystone-manage tenant add $TENANCY
+
+
+	# Add Endpoints to Tenants
+	sudo keystone-manage endpoint add admin 1
+	sudo keystone-manage endpoint add admin 2
+	sudo keystone-manage endpoint add admin 3
+	sudo keystone-manage endpoint add admin 4
+
+	sudo keystone-manage endpoint add $TENANCY 1
+	sudo keystone-manage endpoint add $TENANCY 2
+	sudo keystone-manage endpoint add $TENANCY 3
+	sudo keystone-manage endpoint add $TENANCY 4
+
+
+	# Create roles
+	sudo keystone-manage role add Admin
+	sudo keystone-manage role add KeystoneServiceAdmin
+	sudo keystone-manage role add Member
+
+	# Create users in roles, tenants
+	sudo keystone-manage user add admin openstack 
+	sudo keystone-manage role grant Admin admin
+	sudo keystone-manage role grant KeystoneServiceAdmin admin
+	sudo keystone-manage role grant Admin admin admin
+	sudo keystone-manage token add $KEYSTONE_ADMIN_TOKEN admin admin 2015-02-05T00:00
+	sudo keystone-manage credentials add admin EC2 'admin:admin' openstack admin
+	# Create the novarc files
+	sh ./create_novarc -u admin -p openstack -t admin -C $CC_ADDR
+
+	sudo keystone-manage user add $ADMIN openstack
+	sudo keystone-manage role grant Member $ADMIN $TENANCY
+	sudo keystone-manage role grant Admin $ADMIN $TENANCY
+	sudo keystone-manage credentials add $ADMIN EC2 '$ADMIN:$TENANCY' openstack $TENANCY
+	sh ./create_novarc -u $ADMIN -p openstack -t $TENANCY -C $CC_ADDR
 }
 
 LOGFILE=/var/log/nova/nova-install.log
@@ -99,15 +247,16 @@ DEFAULT_NETWORK_SIZE=64
 DEFAULT_NUM_NETWORKS=1
 DEFAULT_VMNET="10.0.0.0/8"
 DEFAULT_MYSQL_PASS="openstack"
-DEFAULT_PUBLIC_INTERFACE=eth0
-DEFAULT_PRIVATE_INTERFACE=eth1
+DEFAULT_PUBLIC_INTERFACE=eth1
+DEFAULT_PRIVATE_INTERFACE=eth0
 DEFAULT_VLAN_START=100
 DEFAULT_VIRT="qemu"
 DEFAULT_INSTALL="all"
+DEFAULT_TENANT="demo"
 
 
 # Process Command Line
-while getopts T:N:s:n:p:f:P:F:V:C:A:v:hy opts
+while getopts T:N:s:n:p:f:P:F:V:C:A:v:t:hy opts
 do
   case $opts in
     T)
@@ -126,16 +275,16 @@ do
     n)
 	NUM_NETWORKS=${OPTARG}
 	;;
-    p)
+    P)
 	PUBLIC_INTERFACE=${OPTARG}
 	;;
-    f)
+    F)
 	FLOATING_RANGE=${OPTARG}
 	;;
-    P)
+    p)
 	PRIVATE_INTERFACE=${OPTARG}
 	;;
-    F)
+    f)
 	VMNET=${OPTARG}
 	;;
     V)
@@ -149,6 +298,9 @@ do
 	;;
     v)
 	VIRT=${OPTARG}
+	;;
+    t)
+	TENANCY=${OPTARG}
 	;;
     y)
 	AUTO=1
@@ -205,6 +357,16 @@ fi
 if [ -z ${VIRT} ]
 then
 	VIRT=${DEFAULT_VIRT}
+fi
+
+if [ -z ${TENANCY} ]
+then
+	VIRT=${DEFAULT_TENANCY}
+fi
+
+if [ -z ${KEYSTONE_ADMIN_TOKEN} ]
+then
+	KEYSTONE_ADMIN_TOKEN=${DEFAULT_KEYSTONE_ADMIN_TOKEN}
 fi
 
 if [ -z ${INSTALL} ]
@@ -270,9 +432,9 @@ OpenStack will be installed with these options:
 	Role: Admin
 	Credentials: admin:admin
 
-	Tenancy: ${TENANT}
+	Tenancy: ${TENANCY}
 	Role: Member, Admin
-	Credentials demo:${TENANT}
+	Credentials demo:${TENANCY}
 CONFIG
 
 if [ -z ${AUTO} ]
@@ -292,12 +454,16 @@ case ${INSTALL} in
 		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance keystone"
 		EXTRA_PACKAGES="euca2ools unzip qemu ntp python-dateutil"
 		MYSQL_INSTALL=1
+		GLANCE_INSTALL=1
+		KEYSTONE_INSTALL=1
 		RABBITMQ_INSTALL=1
 		;;
 	controller)
 		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance keystone"
 		EXTRA_PACKAGES="euca2ools unzip qemu ntp python-dateutil"
 		MYSQL_INSTALL=1
+		GLANCE_INSTALL=1
+		KEYSTONE_INSTALL=1
 		RABBITMQ_INSTALL=1
 		;;
 	compute|node)
@@ -327,63 +493,22 @@ fi
 apt-get install -y ${NOVA_PACKAGES} ${EXTRA_PACKAGES} 2>&1 >> ${LOGFILE}
 
 
-# Configure the /etc/nova/nova.conf file
-cat > /etc/nova/nova.conf << EOF
---daemonize=1
---dhcpbridge_flagfile=/etc/nova/nova.conf
---dhcpbridge=/usr/bin/nova-dhcpbridge
---force_dhcp_release
---logdir=/var/log/nova
---state_path=/var/lib/nova
---verbose
---connection_type=libvirt
---libvirt_type=${VIRT}
---libvirt_use_virtio_for_bridges
---sql_connection=mysql://nova:${MYSQL_PASS}@${CC_ADDR}/nova
---s3_host=${CC_ADDR}
---rabbit_host=${CC_ADDR}
---ec2_host=${CC_ADDR}
---ec2_dmz_host=${CC_ADDR}
---ec2_url=http://${CC_ADDR}:8773/services/Cloud
---fixed_range=${VMNET}
---network_size=${NETWORK_SIZE}
---num_networks=${NUM_NETWORKS}
---FAKE_subdomain=ec2
---public_interface=${INTERFACE}
---auto_assign_floating_ip
---state_path=/var/lib/nova
---lock_path=/var/lock/nova
---glance_host=${CC_ADDR}
---image_service=nova.image.glance.GlanceImageService
---glance_api_servers=${CC_ADDR}:9292
---vlan_start=${VLAN_START}
---vlan_interface=${PRIVATE_INTERFACE}
---iscsi_helper=tgtadm
---root_helper=sudo nova-rootwrap
-EOF
+# Configure Nova Conf
+configure_nova
 
 if [ ! -z ${MYSQL_INSTALL} ]
 then
-	echo "Configuring MySQL for OpenStack"
+	mysql_install
+fi
 
-	# MySQL - set root user in MySQL to $MYSQL_PASS
-	# which we then use to set up nova, keystone and glance databases with the same $MYSQL_PASS
+if [ ! -z ${GLANCE_INSTALL} ]
+then
+	glance_install
+fi
 
-	cat <<MYSQL_PRESEED | debconf-set-selections
-mysql-server-5.1 mysql-server/root_password password $MYSQL_PASS
-mysql-server-5.1 mysql-server/root_password_again password $MYSQL_PASS
-mysql-server-5.1 mysql-server/start_on_boot boolean true
-MYSQL_PRESEED
-	apt-get install -y mysql-server 2>&1 >> ${LOGFILE}
-	sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/my.cnf
-	service mysql restart
-
-	for D in nova glance keystone
-	do
-		mysql -uroot -p$MYSQL_PASS -e 'CREATE DATABASE $D;'
-		mysql -uroot -p$MYSQL_PASS -e "GRANT ALL PRIVILEGES ON $D.* TO '$D'@'%' WITH GRANT OPTION;"
-		mysql -uroot -p$MYSQL_PASS -e "SET PASSWORD FOR '$D'@'%' = PASSWORD('$MYSQL_PASS');"
-	done
+if [ ! -z ${KEYSTONE_INSTALL} ]
+then
+	keystone_install
 fi
 
 
@@ -392,7 +517,7 @@ case ${INSTALL} in
 		# Configure the networking for this environment
 		echo "Configuring OpenStack VM Network: ${VMNET} ${NUM_NETWORKS} ${NETWORK_SIZE}"
 		nova-manage db sync
-		nova-manage network create vmnet --fixed_range_v4=${VMNET} --network_size=${NETWORK_SIZE} --bridge_interface=${INTERFACE}
+		nova-manage network create vmnet --fixed_range_v4=${VMNET} --network_size=${NETWORK_SIZE} --bridge_interface=${PRIVATE_INTERFACE}
 		nova-manage floating create --ip_range=${FLOATING_RANGE}
 		service libvirt-bin restart 2>&1 >> ${LOGFILE}
 		;;
@@ -410,40 +535,36 @@ case ${INSTALL} in
 		;;
 esac
 
-# Grab config files from GitHub.com/uksysadmin/OpenStackInstaller
-wget -O /tmp/api-paste.ini https://github.com/uksysadmin/OpenStackInstaller/configs/api-paste.ini
-sed -i "s/%CC_ADDR%/$CC_ADDR/g" /tmp/api-paste.ini
-rm -f /etc/nova/api-paste.ini
-cp /tmp/api-paste.ini /etc/nova/api-paste.ini
 
 echo "Restarting service to finalize changes..."
 
-for P in `ls /etc/init.d/nova*`
+if [ ! -z ${KEYSTONE_INSTALL} ]
+then
+	stop keystone 2>&1 >> ${LOGFILE}
+	start keystone 2>&1 >> ${LOGFILE}
+fi
+
+if [ ! -z ${GLANCE_INSTALL} ]
+then
+	stop glance-api 2>&1 >> ${LOGFILE}
+	stop glance-registry 2>&1 >> ${LOGFILE}
+	start glance-api 2>&1 >> ${LOGFILE}
+	start glance-registry 2>&1 >> ${LOGFILE}
+fi
+
+for P in $(ls /etc/init/nova* | cut -d'/' -f4 | cut -d'.' -f1)
 do
- SERVICE_NAME=`basename ${P}`
- service ${SERVICE_NAME} restart 2>&1 >> ${LOGFILE}
- if [ "$?" != "0" ]; then
-   service ${SERVICE_NAME} start 2>&1 >> ${LOGFILE}
- fi 
+	${P} stop 2>&1 >> ${LOGFILE}
+	${P} start 2>&1 >> ${LOGFILE}
 done
 
-if [[ -x /etc/init.d/glance-api ]]
-then
-  for P in `ls /etc/init.d/glance*`
-  do
-   SERVICE_NAME=`basename ${P}`
-   service ${SERVICE_NAME} restart 2>&1 >> ${LOGFILE}
-   if [ "$?" != "0" ]; then
-     service ${SERVICE_NAME} start 2>&1 >> ${LOGFILE}
-   fi 
-  done
-fi
+
 
 # Instructions
 case ${INSTALL} in
 	"compute"|"node")
-HOST=$(hostname -s)
-MYIP=$(/sbin/ifconfig eth0 | awk '/inet addr/ {split ($2,A,":"); print A[2]}')
+	HOST=$(hostname -s)
+	MYIP=$(/sbin/ifconfig eth0 | awk '/inet addr/ {split ($2,A,":"); print A[2]}')
 cat << INSTRUCTIONS
 Ensure that the following is in DNS or in /etc/hosts
 
@@ -456,30 +577,10 @@ INSTRUCTIONS
 cat << INSTRUCTIONS
 To set up your environment and a test VM execute the following:
 
-  [On this host running OpenStack]
-    sudo nova-manage user admin ${ADMIN}
-    sudo nova-manage role add ${ADMIN} cloudadmin
-    sudo nova-manage project create myproject ${ADMIN}
-    sudo nova-manage project zipfile myproject ${ADMIN}
-
-
-
-  [On your client computer after you have downloaded Euca2ools (apt-get install euca2ools)]
-
-    scp ${ADMIN}@`hostname`:nova.zip .
-    mkdir -p cloud/creds
-    cd cloud/creds
-    unzip ~${ADMIN}/nova.zip
-    . novarc
-    cd
-
-    Example test UEC image:
-    wget http://smoser.brickies.net/ubuntu/ttylinux-uec/ttylinux-uec-amd64-12.1_2.6.35-22_1.tar.gz
-    cloud-publish-tarball ttylinux-uec-amd64-12.1_2.6.35-22_1.tar.gz mybucket
 
     Add a keypair to your environment so you can access the guests using keys:
-      euca-add-keypair openstack > cloud/creds/openstack.pem
-      chmod 0600 cloud/creds/*
+      euca-add-keypair $ADMIN > $ADMIN.pem
+      chmod 0600 $ADMIN.pem
 
     Set the security group defaults (iptables):
       euca-authorize default -P tcp -p 22 -s 0.0.0.0/0
