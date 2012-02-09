@@ -563,8 +563,8 @@ fi
 
 for P in $(ls /etc/init/nova* | cut -d'/' -f4 | cut -d'.' -f1)
 do
-	${P} stop 2>&1 >> ${LOGFILE}
-	${P} start 2>&1 >> ${LOGFILE}
+	stop ${P} 2>&1 >> ${LOGFILE}
+	start ${P} 2>&1 >> ${LOGFILE}
 done
 
 
