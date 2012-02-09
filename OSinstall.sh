@@ -92,6 +92,7 @@ cat > /etc/nova/nova.conf << EOF
 --libvirt_use_virtio_for_bridges
 --sql_connection=mysql://nova:${MYSQL_PASS}@${CC_ADDR}/nova
 --s3_host=${CC_ADDR}
+--s3_dmz=${CC_ADDR}
 --rabbit_host=${CC_ADDR}
 --ec2_host=${CC_ADDR}
 --ec2_dmz_host=${CC_ADDR}
@@ -104,13 +105,26 @@ cat > /etc/nova/nova.conf << EOF
 --auto_assign_floating_ip
 --state_path=/var/lib/nova
 --lock_path=/var/lock/nova
---glance_host=${CC_ADDR}
 --image_service=nova.image.glance.GlanceImageService
 --glance_api_servers=${CC_ADDR}:9292
 --vlan_start=${VLAN_START}
 --vlan_interface=${PRIVATE_INTERFACE}
 --iscsi_helper=tgtadm
 --root_helper=sudo nova-rootwrap
+--zone_name=nova
+--node_availability_zone=nova
+--storage_availability_zone=nova
+--allow_admin_api
+--enable_zone_routing
+--api_paste_config=/etc/nova/api-paste.ini
+--vncserver_host=0.0.0.0
+--vncproxy_url=http://${CC_ADDR}:6080
+--ajax_console_proxy_url=http://${CC_ADDR}:8000
+--osapi_host=${CC_ADDR}
+--rabbit_host=${CC_ADDR}
+--keystone_ec2_url=http://${CC_ADDR}:5000/v2.0/ec2tokens
+--multi_host
+--send_arp_for_ha
 EOF
 
 	cp configs/api-paste.ini /tmp
@@ -239,7 +253,7 @@ keystone_install() {
 	sudo keystone-manage user add $ADMIN openstack
 	sudo keystone-manage role grant Member $ADMIN $TENANCY
 	sudo keystone-manage role grant Admin $ADMIN $TENANCY
-	sudo keystone-manage credentials add $ADMIN EC2 '$ADMIN:$TENANCY' openstack $TENANCY
+	sudo keystone-manage credentials add $ADMIN EC2 "$ADMIN:$TENANCY" openstack $TENANCY
 	sh ./create_novarc -u $ADMIN -p openstack -t $TENANCY -C $CC_ADDR
 }
 
