@@ -138,7 +138,7 @@ MYSQL_PRESEED
 	# Create Databases
 	for D in nova glance keystone
 	do
-		mysql -uroot -p$MYSQL_PASS -e 'CREATE DATABASE $D;'
+		mysql -uroot -p$MYSQL_PASS -e "CREATE DATABASE $D;"
 		mysql -uroot -p$MYSQL_PASS -e "GRANT ALL PRIVILEGES ON $D.* TO '$D'@'%' WITH GRANT OPTION;"
 		mysql -uroot -p$MYSQL_PASS -e "SET PASSWORD FOR '$D'@'%' = PASSWORD('$MYSQL_PASS');"
 	done
@@ -147,7 +147,7 @@ MYSQL_PRESEED
 glance_install() {
 	# Configure glance configs
 	# Grab from local github repo
-	TMPAREA=tmp/glance_OSI
+	TMPAREA=/tmp/glance_OSI
 	rm -rf $TMPAREA
 	cp configs/glance* $TMPAREA
 
@@ -166,7 +166,7 @@ glance_install() {
 keystone_install() {
 	# Configure keystone configs
 	# Grab from local github repo
-	TMPAREA=tmp/keystone_OSI
+	TMPAREA=/tmp/keystone_OSI
 	rm -rf $TMPAREA
 	cp configs/keystone.conf $TMPAREA
 
