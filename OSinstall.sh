@@ -118,6 +118,7 @@ EOF
 	sed -i "s/%ADMIN_TOKEN%/$KEYSTONE_ADMIN_TOKEN/g" /tmp/api-paste.ini
 	rm -f /etc/nova/api-paste.ini
 	cp /tmp/api-paste.ini /etc/nova/api-paste.ini
+	rm -f /tmp/api-paste.ini
 }
 
 mysql_install() {
@@ -149,6 +150,7 @@ glance_install() {
 	# Grab from local github repo
 	TMPAREA=/tmp/glance_OSI
 	rm -rf $TMPAREA
+	mkdir -p $TMPAREA
 	cp configs/glance* $TMPAREA
 
 	# Configure files (sed info in)
@@ -157,6 +159,7 @@ glance_install() {
 
 	# Put in place
 	rm -f /etc/glance/glance.*
+	mkdir -p /etc/glance
 	cp $TMPAREA/* /etc/glance
 
 	stop glance-registry
@@ -168,6 +171,7 @@ keystone_install() {
 	# Grab from local github repo
 	TMPAREA=/tmp/keystone_OSI
 	rm -rf $TMPAREA
+	mkdir -p $TMPAREA
 	cp configs/keystone.conf $TMPAREA
 
 	# Configure files (sed info in)
@@ -178,11 +182,14 @@ keystone_install() {
 	rm -f /etc/keystone/keystone.conf
 	cp $TMPAREA/keystone.conf /etc/keystone
 
-	stop keystone
-	start keystone
 	
+	stop keystone
+
 	# Sync Database
 	keystone-manage sync_database
+
+	start keystone
+	
 
 	# Create required endpoints, roles and credentials
 	sudo keystone-manage service add nova compute 'OpenStack Compute Service'
