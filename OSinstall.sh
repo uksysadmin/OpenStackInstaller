@@ -170,6 +170,7 @@ glance_install() {
 	# Configure files (sed info in)
 	sed -i "s/%CC_ADDR%/$CC_ADDR/g" $TMPAREA/*.*
 	sed -i "s/%ADMIN_TOKEN%/$KEYSTONE_ADMIN_TOKEN/g" $TMPAREA/*.*
+	sed -i "s/%MYSQL_PASS%/$MYSQL_PASS/g" $TMPAREA/*.*
 
 	# Put in place
 	rm -f /etc/glance/glance.*
