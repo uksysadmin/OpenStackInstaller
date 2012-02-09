@@ -427,6 +427,9 @@ OpenStack will be installed with these options:
   Cloud Controller (API, Keystone + Glance) = ${CC_ADDR}
   Virtualization Type: ${VIRT}
 
+  Note: The larger the public floating range, the longer it takes to create the entries
+        Stick to a /24 to create 256 entries in test environments with the -F parameter
+
   Account Credentials
 	Tenancy: admin
 	Role: Admin
