@@ -482,6 +482,14 @@ libc6:amd64     libraries/restart-without-asking        boolean true
 LIBC6_PRESEED
 
 
+# Required for workaround to stop dbconfig interrupting keystone install
+cat <<DBCONFIG_PRESEED | debconf-set-selections
+keystone	keystone/dbconfig-install	boolean	false
+keystone	keystone/dbconfig-reinstall	boolean	false
+dbconfig-common	dbconfig-common/purge	boolean	false
+DBCONFIG_PRESEED
+
+
 # Packages to install per install type
 case ${INSTALL} in
 	all|single)
@@ -523,6 +531,8 @@ if [ ! -z ${RABBITMQ_INSTALL} ]
 then
 	apt-get install -y rabbitmq-server 2>&1 >> ${LOGFILE}
 fi
+
+
 
 apt-get install -y ${NOVA_PACKAGES} ${EXTRA_PACKAGES} 2>&1 >> ${LOGFILE}
 
