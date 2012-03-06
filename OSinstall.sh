@@ -209,7 +209,7 @@ keystone_install() {
 	keystone-manage db_sync
 	
 	# Create roles, tenants and services
-	./keyston-services.sh $CC_ADDR $ADMIN $TENANCY
+	./keystone-services.sh $CC_ADDR $ADMIN $TENANCY
 }
 
 LOGFILE=/var/log/nova/nova-install.log
