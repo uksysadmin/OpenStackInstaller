@@ -109,7 +109,6 @@ cat > /etc/nova/nova.conf << EOF
 --glance_api_servers=${CC_ADDR}:9292
 --vlan_start=${VLAN_START}
 --vlan_interface=${PRIVATE_INTERFACE}
---iscsi_helper=tgtadm
 --root_helper=sudo nova-rootwrap
 --zone_name=nova
 --node_availability_zone=nova
@@ -194,68 +193,23 @@ keystone_install() {
 	sed -i "s/%MYSQL_PASS%/$MYSQL_PASS/g" $TMPAREA/*.*
 
 	# Put in place
-	rm -f /etc/keystone/keystone.conf
+	if [[ ! -f /etc/keystone/keystone.conf.orig ]] 
+	then 
+		mv /etc/keystone/keystone.conf{,.orig}
+	else
+		rm -f /etc/keystone/keystone.conf	
+	fi
 	cp $TMPAREA/keystone.conf /etc/keystone
 
 	
 	stop keystone
+	start keystone
 
 	# Sync Database
-	keystone-manage sync_database
-
-	start keystone
+	keystone-manage db_sync
 	
-
-	# Create required endpoints, roles and credentials
-	sudo keystone-manage service add nova compute 'OpenStack Compute Service'
-	sudo keystone-manage service add swift object-store 'OpenStack Object Storage Service'
-	sudo keystone-manage service add glance image-service 'OpenStack Image Service'
-	sudo keystone-manage service add keystone identity-service 'OpenStack Identity Service'
-
-
-	sudo keystone-manage endpointTemplates add nova nova http://$CC_ADDR:8774/v1.1/%tenant_id% http://$CC_ADDR:8774/v1.1/%tenant_id% http://$CC_ADDR:8774/v1.1/%tenant_id% 1 1
-	sudo keystone-manage endpointTemplates add nova glance http://$CC_ADDR:9292/v1 http://$CC_ADDR:9292/v1 http://$CC_ADDR:9292/v1 1 1
-	sudo keystone-manage endpointTemplates add nova swift https://$CC_ADDR:8443/v1/AUTH_%tenant_id% https://$CC_ADDR:8443/v1/ https://$CC_ADDR:8443/v1/AUTH_%tenant_id% 1 1
-	sudo keystone-manage endpointTemplates add nova keystone http://$CC_ADDR:5000/v2.0 http://$CC_ADDR:35357/v2.0 http://$CC_ADDR:5000/v2.0 1 1
-
-
-	# Add Tenants
-	sudo keystone-manage tenant add admin
-	sudo keystone-manage tenant add $TENANCY
-
-
-	# Add Endpoints to Tenants
-	sudo keystone-manage endpoint add admin 1
-	sudo keystone-manage endpoint add admin 2
-	sudo keystone-manage endpoint add admin 3
-	sudo keystone-manage endpoint add admin 4
-
-	sudo keystone-manage endpoint add $TENANCY 1
-	sudo keystone-manage endpoint add $TENANCY 2
-	sudo keystone-manage endpoint add $TENANCY 3
-	sudo keystone-manage endpoint add $TENANCY 4
-
-
-	# Create roles
-	sudo keystone-manage role add Admin
-	sudo keystone-manage role add KeystoneServiceAdmin
-	sudo keystone-manage role add Member
-
-	# Create users in roles, tenants
-	sudo keystone-manage user add admin openstack 
-	sudo keystone-manage role grant Admin admin
-	sudo keystone-manage role grant KeystoneServiceAdmin admin
-	sudo keystone-manage role grant Admin admin admin
-	sudo keystone-manage token add $KEYSTONE_ADMIN_TOKEN admin admin 2015-02-05T00:00
-	sudo keystone-manage credentials add admin EC2 'admin:admin' openstack admin
-	# Create the novarc files
-	sh ./create_novarc -u admin -p openstack -t admin -C $CC_ADDR
-
-	sudo keystone-manage user add $ADMIN openstack
-	sudo keystone-manage role grant Member $ADMIN $TENANCY
-	sudo keystone-manage role grant Admin $ADMIN $TENANCY
-	sudo keystone-manage credentials add $ADMIN EC2 "$ADMIN:$TENANCY" openstack $TENANCY
-	sh ./create_novarc -u $ADMIN -p openstack -t $TENANCY -C $CC_ADDR
+	# Create roles, tenants and services
+	./keyston-services.sh $CC_ADDR $ADMIN $TENANCY
 }
 
 LOGFILE=/var/log/nova/nova-install.log
@@ -459,7 +413,7 @@ OpenStack will be installed with these options:
 
 	Tenancy: ${TENANCY}
 	Role: Member, Admin
-	Credentials demo:${TENANCY}
+	Credentials ${ADMIN}:${TENANCY}
 CONFIG
 
 if [ -z ${AUTO} ]
