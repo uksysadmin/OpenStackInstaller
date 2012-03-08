@@ -20,7 +20,7 @@ export SERVICE_TOKEN=999888777666
 
 
 # ENDPOINT URLS
-NOVA_PUBLIC_URL="http://$ENDPOINT:8774/v1.1/%tenant_id%"
+NOVA_PUBLIC_URL="http://$ENDPOINT:8774/v1.1/%(tenant_id)s"
 NOVA_ADMIN_URL=$NOVA_PUBLIC_URL
 NOVA_INTERNAL_URL=$NOVA_PUBLIC_URL
 
@@ -32,11 +32,9 @@ KEYSTONE_PUBLIC_URL="http://$ENDPOINT:5000/v2.0"
 KEYSTONE_ADMIN_URL="http://$ENDPOINT:35357/v2.0"
 KEYSTONE_INTERNAL_URL=$KEYSTONE_PUBLIC_URL
 
-SWIFT_PUBLIC_URL="https://$ENDPOINT:443/v1/AUTH_%tenant_id%"
+SWIFT_PUBLIC_URL="https://$ENDPOINT:443/v1/AUTH_%(tenant_id)s"
 SWIFT_ADMIN_URL="https://$ENDPOINT:443/v1"
 SWIFT_INTERNAL_URL=$SWIFT_PUBLIC_URL
-
-
 
 # Create required endpoints
 keystone service-create --name nova --type compute --description 'OpenStack Compute Service'
