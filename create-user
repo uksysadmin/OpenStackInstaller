@@ -1,0 +1,100 @@
+#!/bin/bash
+
+# Simple script to create end user credential resource file for use in our
+# OpenStack environment
+
+# Author K. Jackson
+
+# ./create_novarc -u admin -p openstack -t admin -C $CC_ADDR
+
+
+# Process Command Line
+while getopts u:p:t:C: opts
+do
+  case $opts in
+    u)
+	KEYSTONE_USERNAME=${OPTARG}
+        ;;
+    p)
+        KEYSTONE_PASSWORD=${OPTARG}
+        ;;
+    t)
+        KEYSTONE_TENANT=${OPTARG}
+        ;;
+    C)
+        API=${OPTARG}
+        ;;
+    *)
+	echo "Syntax: $(basename $0) -u USER -p KEYSTONE -t TENANT -C CONTROLLER_IP"
+	exit 1
+	;;
+  esac
+done
+
+# You must supply the API endpoint
+if [[ ! $API ]]
+then
+	echo "Syntax: $(basename $0) -u USER -p KEYSTONE -t TENANT -C CONTROLLER_IP"
+	exit 1
+fi
+
+# Lookup the user already, if exist, grab details and write out file
+# If user doesn't exist, create user then write out the file
+
+# Lookup USER_ID and TENANT_ID
+USER_ID=$(keystone user-list | grep "\ $KEYSTONE_USERNAME\ " | awk '{print $2}')
+TENANT_ID=$(keystone tenant-list | grep "\ $KEYSTONE_TENANT\ " | awk '{print $2}')
+
+# Tenant must exist, so exit explaining to user
+if [[ ! $TENANT_ID ]]
+then
+	echo "Tenant $KEYSTONE_TENANT does not exist. Aborting."
+	exit 1
+fi
+
+if [[ ! $USER_ID ]]
+then
+	# User doesn't exist, so lets create it based on the credentials given
+	keystone user-create --name $KEYSTONE_USERNAME --tenant_id $TENANT_ID --pass $KEYSTONE_PASSWORD --email $KEYSTONE_USERNAME@localhost --enabled true
+fi
+
+# Get the USER_ID (again)
+USER_ID=$(keystone user-list | grep "\ $KEYSTONE_USERNAME\ " | awk '{print $2}')
+
+if [[ $TENANT_ID ]]
+then
+	# Continue only if we got a TENANT_ID
+
+	# Nova Auth uses user/pass
+	# EC2 uses random generated EC2 strings
+
+	ACCESS_KEY=$(keystone ec2-credentials-list --user $USER_ID | grep $KEYSTONE_TENANT | awk '{print $4}')
+	SECRET_KEY=$(keystone ec2-credentials-list --user $USER_ID | grep $KEYSTONE_TENANT | awk '{print $6}')
+
+	cat > ${KEYSTONE_USERNAME}rc << EOF
+NOVA_API_HOST=$API
+GLANCE_API_HOST=$API
+KEYSTONE_API_HOST=$API
+
+NOVA_REGION="nova"
+
+export NOVA_USERNAME=$KEYSTONE_USERNAME
+export NOVA_PROJECT_ID=$KEYSTONE_TENANT
+export NOVA_PASSWORD=$KEYSTONE_PASSWORD
+export NOVA_API_KEY=$KEYSTONE_PASSWORD
+export NOVA_REGION_NAME=\$NOVA_REGION
+export NOVA_URL="http://\$NOVA_API_HOST:5000/v2.0/"
+export NOVA_VERSION="1.1"
+
+export OS_AUTH_USER=$KEYSTONE_USERNAME
+export OS_AUTH_KEY=$KEYSTONE_PASSWORD
+export OS_AUTH_TENANT=$KEYSTONE_TENANT
+export OS_AUTH_URL="http://\$KEYSTONE_API_HOST:5000/v2.0/"
+export OS_AUTH_STRATEGY="keystone"
+
+export EC2_URL="http://\$NOVA_API_HOST:8773/services/Cloud"
+export EC2_ACCESS_KEY="$ACCESS_KEY"
+export EC2_SECRET_KEY="$SECRET_KEY"
+export S3_URL="http://\$GLANCE_API_HOST:3333"
+EOF
+fi

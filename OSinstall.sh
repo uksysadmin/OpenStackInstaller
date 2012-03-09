@@ -210,6 +210,10 @@ keystone_install() {
 	
 	# Create roles, tenants and services
 	./keystone-services.sh $CC_ADDR $ADMIN $TENANCY
+	# Technically the user gets created in the above reference script
+	# But this useful script can be run seperately without issues
+	# and creates the resource config env file (userrc)
+	./create-user -u $ADMIN -p openstack -t $TENANCY -C $CC_ADDR
 }
 
 LOGFILE=/var/log/nova/nova-install.log
@@ -575,6 +579,9 @@ INSTRUCTIONS
 cat << INSTRUCTIONS
 To set up your environment and a test VM execute the following:
 
+    Setting up user environment
+      Copy over the ${ADMIN}rc file created in this directory to your client
+      Source in the ${ADMIN}rc file:   . ${ADMIN}rc
 
     Add a keypair to your environment so you can access the guests using keys:
       euca-add-keypair $ADMIN > $ADMIN.pem
@@ -593,7 +600,7 @@ To set up your environment and a test VM execute the following:
 
       euca-describe-instances
 
-      ssh -i cloud/creds/openstack.pem root@ipaddress
+      ssh -i $ADMIN.pem root@ipaddress
 
       euca-terminate-instances instanceid
     *****************************************************
