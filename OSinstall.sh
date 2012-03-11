@@ -121,14 +121,14 @@ cat > /etc/nova/nova.conf << EOF
 --ajax_console_proxy_url=http://${CC_ADDR}:8000
 --osapi_host=${CC_ADDR}
 --rabbit_host=${CC_ADDR}
---keystone_ec2_url=http://${CC_ADDR}:5000/v2.0/ec2tokens
+--keystone_ec2_url=http://${CC_ADDR}:5000/v2.0/tokens
 --multi_host
 --send_arp_for_ha
 EOF
 
 	cp configs/api-paste.ini /tmp
 	sed -i "s/%CC_ADDR%/$CC_ADDR/g" /tmp/api-paste.ini
-	sed -i "s/%ADMIN_TOKEN%/$KEYSTONE_ADMIN_TOKEN/g" /tmp/api-paste.ini
+	sed -i "s/%SERVICE_TENANT_NAME%/$TENANCY/g" /tmp/api-paste.ini
 	rm -f /etc/nova/api-paste.ini
 	cp /tmp/api-paste.ini /etc/nova/api-paste.ini
 	rm -f /tmp/api-paste.ini

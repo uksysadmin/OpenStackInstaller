@@ -24,6 +24,10 @@ NOVA_PUBLIC_URL="http://$ENDPOINT:8774/v1.1/%(tenant_id)s"
 NOVA_ADMIN_URL=$NOVA_PUBLIC_URL
 NOVA_INTERNAL_URL=$NOVA_PUBLIC_URL
 
+EC2_PUBLIC_URL="http://$ENDPOINT:8773/services/Cloud"
+EC2_ADMIN_URL="http://$ENDPOINT:8773/services/Admin"
+EC2_INTERNAL_URL=$NOVA_PUBLIC_URL
+
 GLANCE_PUBLIC_URL="http://$ENDPOINT:9292/v1"
 GLANCE_ADMIN_URL=$GLANCE_PUBLIC_URL
 GLANCE_INTERNAL_URL=$GLANCE_PUBLIC_URL
@@ -36,16 +40,23 @@ SWIFT_PUBLIC_URL="https://$ENDPOINT:443/v1/AUTH_%(tenant_id)s"
 SWIFT_ADMIN_URL="https://$ENDPOINT:443/v1"
 SWIFT_INTERNAL_URL=$SWIFT_PUBLIC_URL
 
+VOLUME_PUBLIC_URL="http://$ENDPOINT:8776/v1/%(tenant_id)s"
+VOLUME_ADMIN_URL=$VOLUME_PUBLIC_URL
+VOLUME_INTERNAL_URL=$VOLUME_PUBLIC_URL
+
+
 # Create required endpoints
 keystone service-create --name nova --type compute --description 'OpenStack Compute Service'
 keystone service-create --name swift --type object-store --description 'OpenStack Storage Service'
 keystone service-create --name glance --type image --description 'OpenStack Image Service'
 keystone service-create --name keystone --type identity --description 'OpenStack Identity Service'
+keystone service-create --name ec2 --type ec2 --description 'EC2 Service'
+keystone service-create --name volume --type volume --description 'Volume Service'
 
 
 
 # Create endpoints
-for S in NOVA SWIFT GLANCE KEYSTONE
+for S in NOVA EC2 SWIFT GLANCE VOLUME KEYSTONE
 do
 	ID=$(keystone service-list | grep -i $S | awk '{print $2}')
 	PUBLIC=$(eval echo \$${S}_PUBLIC_URL)
