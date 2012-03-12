@@ -82,7 +82,7 @@ done
 keystone tenant-create --name=$TENANCY
 
 # Create roles
-ALL_ROLES=Admin KeystoneAdmin KeystoneServiceAdmin sysadmin netadmin Member
+ALL_ROLES="Admin KeystoneAdmin KeystoneServiceAdmin sysadmin netadmin Member"
 for R in $ALL_ROLES
 do
 	keystone role-create --name $R
