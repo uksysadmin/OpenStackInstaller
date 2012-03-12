@@ -34,7 +34,7 @@ done
 # You must supply the API endpoint
 if [[ ! $API ]]
 then
-	echo "Syntax: $(basename $0) -u USER -p KEYSTONE -t TENANT -C CONTROLLER_IP"
+	echo "Syntax: $(basename $0) -u USER -p PASSWORD -t TENANT -C CONTROLLER_IP"
 	exit 1
 fi
 
@@ -56,6 +56,7 @@ if [[ ! $USER_ID ]]
 then
 	# User doesn't exist, so lets create it based on the credentials given
 	keystone user-create --name $KEYSTONE_USERNAME --tenant_id $TENANT_ID --pass $KEYSTONE_PASSWORD --email $KEYSTONE_USERNAME@localhost --enabled true
+	keystone ec2-credentials-create --user $KEYSTONE_USERNAME --tenant_id $TENANT_ID
 fi
 
 # Get the USER_ID (again)
@@ -68,8 +69,8 @@ then
 	# Nova Auth uses user/pass
 	# EC2 uses random generated EC2 strings
 
-	ACCESS_KEY=$(keystone ec2-credentials-list --user $USER_ID | grep $KEYSTONE_TENANT | awk '{print $4}')
-	SECRET_KEY=$(keystone ec2-credentials-list --user $USER_ID | grep $KEYSTONE_TENANT | awk '{print $6}')
+	ACCESS_KEY=$(keystone ec2-credentials-list --user $KEYSTONE_USERNAME | grep $KEYSTONE_TENANT | awk '{print $4}')
+	SECRET_KEY=$(keystone ec2-credentials-list --user $KEYSTONE_USERNAME | grep $KEYSTONE_TENANT | awk '{print $6}')
 
 	cat > ${KEYSTONE_USERNAME}rc << EOF
 NOVA_API_HOST=$API

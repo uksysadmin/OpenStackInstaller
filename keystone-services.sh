@@ -8,6 +8,12 @@ USER=$2
 PASSWORD=openstack
 TENANCY=$3
 
+# Drops and recreates the database, keystone
+# Edit to suit (Todo: source in from main settings file)
+DATABASE=keystone
+DATABASE_USER=root
+DATABASE_PASSWORD=openstack
+
 if [[ ! $ENDPOINT ]]
 then
 	echo "Syntax: $(basename $0) KEYSTONE_IP USER TENANCY"
@@ -44,6 +50,12 @@ VOLUME_PUBLIC_URL="http://$ENDPOINT:8776/v1/%(tenant_id)s"
 VOLUME_ADMIN_URL=$VOLUME_PUBLIC_URL
 VOLUME_INTERNAL_URL=$VOLUME_PUBLIC_URL
 
+stop keystone 2>&1 >/dev/null
+start keystone 2>&1 >/dev/null
+
+mysql -u${DATABASE_USER} -p${DATABASE_PASSWORD} -e "drop database $DATABASE; create database $DATABASE;" 2>&1 > /dev/null
+keystone-manage db_sync
+
 
 # Create required endpoints
 keystone service-create --name nova --type compute --description 'OpenStack Compute Service'
@@ -70,32 +82,25 @@ done
 keystone tenant-create --name=$TENANCY
 
 # Create roles
-keystone role-create --name Admin
-keystone role-create --name KeystoneServiceAdmin
-keystone role-create --name Member
+ALL_ROLES=Admin KeystoneAdmin KeystoneServiceAdmin sysadmin netadmin Member
+for R in $ALL_ROLES
+do
+	keystone role-create --name $R
+done
 
 # Create users
 TENANT_ID=$(keystone tenant-list | grep $TENANCY | awk '{print $2}')
 
 # Create admin and $USER role
 keystone user-create --name admin --tenant_id $TENANT_ID --pass $PASSWORD --email root@localhost --enabled true
-keystone user-create --name $USER --tenant_id $TENANT_ID --pass $PASSWORD --email $USER@localhost --enabled true
 
 # Admin User
 USER_ID=$(keystone user-list | grep admin | awk '{print $2}')
-for R in Admin KeystoneServiceAdmin Member
+for R in $ALL_ROLES
 do
 	ROLE_ID=$(keystone role-list | grep "\ $R\ " | awk '{print $2}')
 	keystone user-role-add --user $USER_ID --role $ROLE_ID --tenant_id $TENANT_ID
 done
 
-# $USER
-USER_ID=$(keystone user-list | grep $USER | awk '{print $2}')
-for R in Admin Member
-do
-	ROLE_ID=$(keystone role-list | grep "\ $R\ " | awk '{print $2}')
-	keystone user-role-add --user $USER_ID --role $ROLE_ID --tenant_id $TENANT_ID
-done
-
-# Create the EC2 credentials
-keystone ec2-credentials-create --user $USER_ID --tenant_id $TENANT_ID
+# For a normal user we'll use the 'create-user' script
+./create-user -u ${USER} -p ${PASSWORD} -t ${TENANCY} -C ${ENDPOINT}
