@@ -1,18 +1,26 @@
 #!/bin/bash
 
-# Assumes ENDPOINT has Compute API, Glance, Keystone and Storage
+# Creates 'admin' user in default tenant ($TENANCY) with 'admin' role
+# Creates service roles (swift, glance, nova, keystone) in 'service' tenant with 'admin' role
+# Creates $USER role in default tenant ($TENANCY) with 'Member' and 'admin' roles
 
-ENDPOINT=$1
-# Initial User and Tenancy, e.g. demo and test
-USER=$2
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# WARNING! This script drops the keystone db and recreates it
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# set default password
 PASSWORD=openstack
-TENANCY=$3
-
-# Drops and recreates the database, keystone
-# Edit to suit (Todo: source in from main settings file)
 DATABASE=keystone
 DATABASE_USER=root
 DATABASE_PASSWORD=openstack
+
+# Assumes ENDPOINT has Compute API, Glance, Keystone and Storage
+
+ENDPOINT=$1
+USER=$2
+# Default tenant to create
+TENANCY=$3
+
 
 if [[ ! $ENDPOINT ]]
 then
@@ -50,9 +58,6 @@ VOLUME_PUBLIC_URL="http://$ENDPOINT:8776/v1/\$(tenant_id)s"
 VOLUME_ADMIN_URL=$VOLUME_PUBLIC_URL
 VOLUME_INTERNAL_URL=$VOLUME_PUBLIC_URL
 
-stop keystone 2>&1 >/dev/null
-start keystone 2>&1 >/dev/null
-
 # !WARNING!
 # Drop the keystone database
 # Recreate it
@@ -81,44 +86,48 @@ do
 done
 
 
+# 
 # Add Default Tenant
+# 
 keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT tenant-create --name $TENANCY --description "Default Tenant" --enabled true
 TENANT_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT tenant-list | grep "\ $TENANCY\ " | awk '{print $2}')
 
 
+#
 # Create roles
-ALL_ROLES="admin KeystoneAdmin KeystoneServiceAdmin sysadmin netadmin Member"
+#
+ALL_ROLES="admin Member"
 for R in $ALL_ROLES
 do
 	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT role-create --name $R
 done
 
-# Create Admin User
+# 
+# Create 'admin' User with 'admin' and 'Member' role in defaut tenant
+#
 keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-create --name admin --tenant_id $TENANT_ID --pass $PASSWORD --email root@localhost --enabled true
-USER_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-list | grep "\ admin\ " | awk '{print $2}')
+ADMIN_USER_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-list | grep "\ admin\ " | awk '{print $2}')
 for R in $ALL_ROLES
 do
 	ROLE_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT role-list | grep "\ $R\ " | awk '{print $2}')
-	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-role-add --user $USER_ID --role $ROLE_ID --tenant_id $TENANT_ID
+	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-role-add --user $ADMIN_USER_ID --role $ROLE_ID --tenant_id $TENANT_ID
 done
 
+#
+# Get admin role id
+#
+ADMIN_ROLE_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT role-list | grep "\ admin\ " | awk '{print $2}')
 
 #
 # Add Service Tenant
 # tenant-create name service
 #
-#
 keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT tenant-create --name service --description "Service Tenant" --enabled true
 SERVICE_TENANT_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT tenant-list | grep "\ service\ " | awk '{print $2}')
 
 #
-# get admin role id
-#
-ADMIN_ROLE_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT role-list | grep "\ admin\ " | awk '{print $2}')
-
-#
 # Add services to service tenant
-# user-create --name service_name --pass service_name --tenant_id service_tenant_id
+# user-create --name service_name --pass service_name --tenant_id service_tenant_id --role admin_role_id
 #
 SERVICES="glance nova keystone swift"
 for S in ${SERVICES}
@@ -128,7 +137,6 @@ do
 	# Grant admin role to the $S user in the service tenant
 	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-role-add --user $SERVICE_ID --role ${ADMIN_ROLE_ID} --tenant_id $SERVICE_TENANT_ID
 done
-
 
 
 # For a normal user we'll use the 'create-user' script
