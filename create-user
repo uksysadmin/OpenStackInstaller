@@ -7,7 +7,8 @@
 
 # ./create-user -u admin -p openstack -t admin -C $CC_ADDR
 
-
+# Which roles should the user belong to?
+ALL_ROLES="Member"
 
 # Process Command Line
 while getopts u:p:t:C: opts
@@ -62,6 +63,16 @@ then
 	# User doesn't exist, so lets create it based on the credentials given
 	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-create --name $KEYSTONE_USERNAME --tenant_id $TENANT_ID --pass $KEYSTONE_PASSWORD --email $KEYSTONE_USERNAME@localhost --enabled true
 	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-create --user $KEYSTONE_USERNAME --tenant_id $TENANT_ID
+
+	# Add the user to the relevant roles
+	KEYSTONE_USER_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-list | grep "\ $KEYSTONE_USERNAME\ " | awk '{print $2}')
+	for R in $ALL_ROLES
+	do
+		ROLE_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT role-list | grep "\ $R\ " | awk '{print $2}')
+		keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-role-add --user $KEYSTONE_USER_ID --role $ROLE_ID --tenant_id $TENANT_ID
+	done
+
+	
 fi
 
 # Get the USER_ID (again)
