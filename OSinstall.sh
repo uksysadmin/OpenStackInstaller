@@ -121,6 +121,7 @@ cat > /etc/nova/nova.conf << EOF
 --ajax_console_proxy_url=http://${CC_ADDR}:8000
 --osapi_host=${CC_ADDR}
 --rabbit_host=${CC_ADDR}
+--auth_strategy=keystone
 --keystone_ec2_url=http://${CC_ADDR}:5000/v2.0/tokens
 --multi_host
 --send_arp_for_ha
