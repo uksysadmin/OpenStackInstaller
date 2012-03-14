@@ -572,6 +572,9 @@ INSTRUCTIONS
 cat << INSTRUCTIONS
 To set up your environment and a test VM execute the following:
 
+    Upload a test Ubuntu image:
+      ./upload_ubuntu.sh -a admin -p openstack -t ${TENANCY} -C ${CC_ADDR}
+
     Setting up user environment
       Copy over the ${ADMIN}rc file created in this directory to your client
       Source in the ${ADMIN}rc file:   . ${ADMIN}rc
@@ -589,7 +592,7 @@ To set up your environment and a test VM execute the following:
 
     *****************************************************
     To run, check, connect and terminate an instance
-      euca-run-instances \$emi -k openstack -t m1.tiny
+      euca-run-instances \$emi -k $ADMIN -t m1.tiny
 
       euca-describe-instances
 
