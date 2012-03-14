@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 # Simple script to download Ubuntu Oneiric 11.10 from ubuntu.com
 # and publish to cloud environment for use
@@ -10,6 +11,38 @@ VERSION=11.10
 TARBALL=${DISTRO}-${VERSION}-server-cloudimg-${ARCH}.tar.gz
 
 TMPAREA=/tmp/__upload
+
+# Process Command Line
+while getopts a:p:t:C: opts
+do
+  case $opts in
+    a)
+        ADMIN=${OPTARG}
+        ;;
+    p)
+        PASSWORD=${OPTARG}
+        ;;
+    t)
+        TENANT=${OPTARG}
+        ;;
+    C)
+        ENDPOINT=${OPTARG}
+        ;;
+    *)
+        echo "Syntax: $(basename $0) -u USER -p KEYSTONE -t TENANT -C CONTROLLER_IP"
+        exit 1
+        ;;
+  esac
+done
+
+# You must supply the API endpoint
+if [[ ! $ENDPOINT ]]
+then
+        echo "Syntax: $(basename $0) -a admin -p PASSWORD -t TENANT -C CONTROLLER_IP"
+        exit 1
+fi
+
+
 
 mkdir -p ${TMPAREA}
 
@@ -25,9 +58,9 @@ then
 	DISTRO_IMAGE=$(ls *-${ARCH}.img)
 	DISTRO_KERNEL=$(ls *-${ARCH}-vmlinuz-virtual)
 
-	KERNEL=$(glance -A 999888777666 add name="${DISTRO} ${VERSION} ${ARCH} Kernel" disk_format=aki container_format=aki distro="${DISTRO} ${VERSION}" is_public=true < ${DISTRO_KERNEL} | cut -d':' -f2 | awk '{print $1}')
+	KERNEL=$(glance --username=${ADMIN} --password=${PASSWORD} --tenant=${TENANT} --auth_url=http://${ENDPOINT}:5000/v2.0 add name="${DISTRO} ${VERSION} ${ARCH} Kernel" disk_format=aki container_format=aki distro="${DISTRO} ${VERSION}" is_public=true < ${DISTRO_KERNEL} | awk '/ ID/ { print $6 }')
 
-	AMI=$(glance -A 999888777666 add name="${DISTRO} ${VERSION} ${ARCH} Server" disk_format=ami container_format=ami distro="${DISTRO} ${VERSION}" kernel_id=${KERNEL} is_public=true < ${DISTRO_IMAGE})
+	AMI=$(glance --username=${ADMIN} --password=${PASSWORD} --tenant=${TENANT} --auth_url=http://${ENDPOINT}:5000/v2.0 add name="${DISTRO} ${VERSION} ${ARCH} Server" disk_format=ami container_format=ami distro="${DISTRO} ${VERSION}" kernel_id=${KERNEL} is_public=true < ${DISTRO_IMAGE} | awk '/ ID/ { print $6 }'))
 
 	echo "${DISTRO} ${VERSION} ${ARCH} now available in Glance (${AMI})"
 
