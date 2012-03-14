@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 
 # Simple script to download Ubuntu Oneiric 11.10 from ubuntu.com
 # and publish to cloud environment for use
