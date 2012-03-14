@@ -5,7 +5,8 @@
 
 # Author K. Jackson
 
-# ./create_novarc -u admin -p openstack -t admin -C $CC_ADDR
+# ./create-user -u admin -p openstack -t admin -C $CC_ADDR
+
 
 
 # Process Command Line
@@ -22,7 +23,7 @@ do
         KEYSTONE_TENANT=${OPTARG}
         ;;
     C)
-        API=${OPTARG}
+        ENDPOINT=${OPTARG}
         ;;
     *)
 	echo "Syntax: $(basename $0) -u USER -p KEYSTONE -t TENANT -C CONTROLLER_IP"
@@ -32,18 +33,22 @@ do
 done
 
 # You must supply the API endpoint
-if [[ ! $API ]]
+if [[ ! $ENDPOINT ]]
 then
 	echo "Syntax: $(basename $0) -u USER -p PASSWORD -t TENANT -C CONTROLLER_IP"
 	exit 1
 fi
 
+# Using token auth env variables
+SERVICE_ENDPOINT=http://$ENDPOINT:35357/v2.0/
+SERVICE_TOKEN=999888777666
+
 # Lookup the user already, if exist, grab details and write out file
 # If user doesn't exist, create user then write out the file
 
 # Lookup USER_ID and TENANT_ID
-USER_ID=$(keystone user-list | grep "\ $KEYSTONE_USERNAME\ " | awk '{print $2}')
-TENANT_ID=$(keystone tenant-list | grep "\ $KEYSTONE_TENANT\ " | awk '{print $2}')
+USER_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-list | grep "\ $KEYSTONE_USERNAME\ " | awk '{print $2}')
+TENANT_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT tenant-list | grep "\ $KEYSTONE_TENANT\ " | awk '{print $2}')
 
 # Tenant must exist, so exit explaining to user
 if [[ ! $TENANT_ID ]]
@@ -55,12 +60,12 @@ fi
 if [[ ! $USER_ID ]]
 then
 	# User doesn't exist, so lets create it based on the credentials given
-	keystone user-create --name $KEYSTONE_USERNAME --tenant_id $TENANT_ID --pass $KEYSTONE_PASSWORD --email $KEYSTONE_USERNAME@localhost --enabled true
-	keystone ec2-credentials-create --user $KEYSTONE_USERNAME --tenant_id $TENANT_ID
+	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-create --name $KEYSTONE_USERNAME --tenant_id $TENANT_ID --pass $KEYSTONE_PASSWORD --email $KEYSTONE_USERNAME@localhost --enabled true
+	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-create --user $KEYSTONE_USERNAME --tenant_id $TENANT_ID
 fi
 
 # Get the USER_ID (again)
-USER_ID=$(keystone user-list | grep "\ $KEYSTONE_USERNAME\ " | awk '{print $2}')
+USER_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-list | grep "\ $KEYSTONE_USERNAME\ " | awk '{print $2}')
 
 if [[ $TENANT_ID ]]
 then
@@ -69,13 +74,13 @@ then
 	# Nova Auth uses user/pass
 	# EC2 uses random generated EC2 strings
 
-	ACCESS_KEY=$(keystone ec2-credentials-list --user $KEYSTONE_USERNAME | grep $KEYSTONE_TENANT | awk '{print $4}')
-	SECRET_KEY=$(keystone ec2-credentials-list --user $KEYSTONE_USERNAME | grep $KEYSTONE_TENANT | awk '{print $6}')
+	ACCESS_KEY=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-list --user $KEYSTONE_USERNAME | grep $KEYSTONE_TENANT | awk '{print $4}')
+	SECRET_KEY=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-list --user $KEYSTONE_USERNAME | grep $KEYSTONE_TENANT | awk '{print $6}')
 
 	cat > ${KEYSTONE_USERNAME}rc << EOF
-NOVA_API_HOST=$API
-GLANCE_API_HOST=$API
-KEYSTONE_API_HOST=$API
+NOVA_API_HOST=$ENDPOINT
+GLANCE_API_HOST=$ENDPOINT
+KEYSTONE_API_HOST=$ENDPOINT
 
 NOVA_REGION="nova"
 

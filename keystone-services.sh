@@ -21,8 +21,8 @@ then
 fi
 
 # Using token auth env variables
-export SERVICE_ENDPOINT=http://$ENDPOINT:35357/v2.0/
-export SERVICE_TOKEN=999888777666
+SERVICE_ENDPOINT=http://$ENDPOINT:35357/v2.0/
+SERVICE_TOKEN=999888777666
 
 
 # ENDPOINT URLS
@@ -42,65 +42,81 @@ KEYSTONE_PUBLIC_URL="http://$ENDPOINT:5000/v2.0"
 KEYSTONE_ADMIN_URL="http://$ENDPOINT:35357/v2.0"
 KEYSTONE_INTERNAL_URL=$KEYSTONE_PUBLIC_URL
 
-SWIFT_PUBLIC_URL="https://$ENDPOINT:443/v1/AUTH_%(tenant_id)s"
+SWIFT_PUBLIC_URL="https://$ENDPOINT:443/v1/AUTH_\$(tenant_id)s"
 SWIFT_ADMIN_URL="https://$ENDPOINT:443/v1"
 SWIFT_INTERNAL_URL=$SWIFT_PUBLIC_URL
 
-VOLUME_PUBLIC_URL="http://$ENDPOINT:8776/v1/%(tenant_id)s"
+VOLUME_PUBLIC_URL="http://$ENDPOINT:8776/v1/\$(tenant_id)s"
 VOLUME_ADMIN_URL=$VOLUME_PUBLIC_URL
 VOLUME_INTERNAL_URL=$VOLUME_PUBLIC_URL
 
 stop keystone 2>&1 >/dev/null
 start keystone 2>&1 >/dev/null
 
+# !WARNING!
+# Drop the keystone database
+# Recreate it
 mysql -u${DATABASE_USER} -p${DATABASE_PASSWORD} -e "drop database $DATABASE; create database $DATABASE;" 2>&1 > /dev/null
 keystone-manage db_sync
 
 
-# Create required endpoints
-keystone service-create --name nova --type compute --description 'OpenStack Compute Service'
-keystone service-create --name swift --type object-store --description 'OpenStack Storage Service'
-keystone service-create --name glance --type image --description 'OpenStack Image Service'
-keystone service-create --name keystone --type identity --description 'OpenStack Identity Service'
-keystone service-create --name ec2 --type ec2 --description 'EC2 Service'
-keystone service-create --name volume --type volume --description 'Volume Service'
+# Create required services
+keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT service-create --name nova --type compute --description 'OpenStack Compute Service'
+keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT service-create --name swift --type object-store --description 'OpenStack Storage Service'
+keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT service-create --name glance --type image --description 'OpenStack Image Service'
+keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT service-create --name keystone --type identity --description 'OpenStack Identity Service'
+keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT service-create --name ec2 --type ec2 --description 'EC2 Service'
+keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT service-create --name volume --type volume --description 'Volume Service'
 
 
 
-# Create endpoints
+# Create endpoints on the services
 for S in NOVA EC2 SWIFT GLANCE VOLUME KEYSTONE
 do
-	ID=$(keystone service-list | grep -i $S | awk '{print $2}')
+	ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT service-list | grep -i $S | awk '{print $2}')
 	PUBLIC=$(eval echo \$${S}_PUBLIC_URL)
 	ADMIN=$(eval echo \$${S}_ADMIN_URL)
 	INTERNAL=$(eval echo \$${S}_INTERNAL_URL)
-	keystone endpoint-create --region nova --service_id $ID --publicurl $PUBLIC --adminurl $ADMIN --internalurl $INTERNAL
+	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT endpoint-create --region nova --service_id $ID --publicurl $PUBLIC --adminurl $ADMIN --internalurl $INTERNAL
 done
 
 
-# Add Tenants
-keystone tenant-create --name=$TENANCY
+# Add Default Tenant
+keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT tenant-create --name $TENANCY --description "Default Tenant" --enabled true
+TENANT_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT tenant-list | grep "\ $TENANCY\ " | awk '{print $2}')
+
 
 # Create roles
-ALL_ROLES="Admin KeystoneAdmin KeystoneServiceAdmin sysadmin netadmin Member"
+ALL_ROLES="admin KeystoneAdmin KeystoneServiceAdmin sysadmin netadmin Member"
 for R in $ALL_ROLES
 do
-	keystone role-create --name $R
+	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT role-create --name $R
 done
 
-# Create users
-TENANT_ID=$(keystone tenant-list | grep $TENANCY | awk '{print $2}')
-
-# Create admin and $USER role
-keystone user-create --name admin --tenant_id $TENANT_ID --pass $PASSWORD --email root@localhost --enabled true
-
-# Admin User
-USER_ID=$(keystone user-list | grep admin | awk '{print $2}')
+# Create Admin User
+keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-create --name admin --tenant_id $TENANT_ID --pass $PASSWORD --email root@localhost --enabled true
+USER_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-list | grep "\ admin\ " | awk '{print $2}')
 for R in $ALL_ROLES
 do
-	ROLE_ID=$(keystone role-list | grep "\ $R\ " | awk '{print $2}')
-	keystone user-role-add --user $USER_ID --role $ROLE_ID --tenant_id $TENANT_ID
+	ROLE_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT role-list | grep "\ $R\ " | awk '{print $2}')
+	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-role-add --user $USER_ID --role $ROLE_ID --tenant_id $TENANT_ID
 done
 
 # For a normal user we'll use the 'create-user' script
 ./create-user -u ${USER} -p ${PASSWORD} -t ${TENANCY} -C ${ENDPOINT}
+
+
+# Add Service Tenant
+keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT tenant-create --name service --description "Service Tenant" --enabled true
+SERVICE_TENANT_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT tenant-list | grep "\ service\ " | awk '{print $2}')
+
+SERVICES="glance nova keystone swift"
+for S in ${SERVICES}
+do
+	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-create --name $S --pass $S --email $S@localhost --enabled true
+	SERVICE_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-list | grep "\ $S\ " | awk '{print $2}')
+	# Grant admin role to the $S user in the service tenant
+	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-role-add --user $SERVICE_ID --role $ROLE_ID --tenant_id $TENANT_ID
+done
+
+
