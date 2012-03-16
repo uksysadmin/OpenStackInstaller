@@ -531,6 +531,13 @@ case ${INSTALL} in
 		;;
 esac
 
+# Ubuntu has a permission issue at the mo... https://bugs.launchpad.net/nova/+bug/956876
+# Tiny workaround
+if [[ -d /var/lib/nova ]]
+then
+        chown -R nova:nova /var/lib/nova
+fi
+
 
 echo "Restarting service to finalize changes..."
 
