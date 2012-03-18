@@ -8,7 +8,7 @@
 # ./create-user -u admin -p openstack -t admin -C $CC_ADDR
 
 # Which roles should the user belong to?
-ALL_ROLES="Member"
+ALL_ROLES="Member admin swiftoperator"
 
 # Process Command Line
 while getopts u:p:t:C: opts

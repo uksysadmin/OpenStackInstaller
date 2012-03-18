@@ -96,14 +96,14 @@ TENANT_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT tenant-
 #
 # Create roles
 #
-ALL_ROLES="admin Member"
+ALL_ROLES="admin Member swiftoperator"
 for R in $ALL_ROLES
 do
 	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT role-create --name $R
 done
 
 # 
-# Create 'admin' User with 'admin' and 'Member' role in defaut tenant
+# Create 'admin' User with 'admin', 'Member' and swiftoperator role in defaut tenant
 #
 keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-create --name admin --tenant_id $TENANT_ID --pass $PASSWORD --email root@localhost --enabled true
 ADMIN_USER_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-list | grep "\ admin\ " | awk '{print $2}')
