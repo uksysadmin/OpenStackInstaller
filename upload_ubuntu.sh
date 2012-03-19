@@ -57,9 +57,9 @@ then
 	DISTRO_IMAGE=$(ls *-${ARCH}.img)
 	DISTRO_KERNEL=$(ls *-${ARCH}-vmlinuz-virtual)
 
-	KERNEL=$(glance --username=${ADMIN} --password=${PASSWORD} --tenant=${TENANT} --auth_url=http://${ENDPOINT}:5000/v2.0 add name="${DISTRO} ${VERSION} ${ARCH} Kernel" disk_format=aki container_format=aki distro="${DISTRO} ${VERSION}" is_public=true < ${DISTRO_KERNEL} | awk '/ ID/ { print $6 }')
+	KERNEL=$(glance -I ${ADMIN} -K ${PASSWORD} -T ${TENANT} -N http://${ENDPOINT}:5000/v2.0 add name="${DISTRO} ${VERSION} ${ARCH} Kernel" disk_format=aki container_format=aki distro="${DISTRO} ${VERSION}" is_public=true < ${DISTRO_KERNEL} | awk '/ ID/ { print $6 }')
 
-	AMI=$(glance --username=${ADMIN} --password=${PASSWORD} --tenant=${TENANT} --auth_url=http://${ENDPOINT}:5000/v2.0 add name="${DISTRO} ${VERSION} ${ARCH} Server" disk_format=ami container_format=ami distro="${DISTRO} ${VERSION}" kernel_id=${KERNEL} is_public=true < ${DISTRO_IMAGE} | awk '/ ID/ { print $6 }')
+	AMI=$(glance -I ${ADMIN} -K ${PASSWORD} -T ${TENANT} -N http://${ENDPOINT}:5000/v2.0 add name="${DISTRO} ${VERSION} ${ARCH} Server" disk_format=ami container_format=ami distro="${DISTRO} ${VERSION}" kernel_id=${KERNEL} is_public=true < ${DISTRO_IMAGE} | awk '/ ID/ { print $6 }')
 
 	echo "${DISTRO} ${VERSION} ${ARCH} now available in Glance (${AMI})"
 
