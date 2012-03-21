@@ -202,6 +202,9 @@ keystone_install() {
 	fi
 	cp $TMPAREA/keystone.conf /etc/keystone
 
+	stop keystone 
+	start keystone 
+
 	# Create roles, tenants and services
 	./keystone-services.sh $CC_ADDR $ADMIN $TENANCY
 	# Technically the user gets created in the above reference script
