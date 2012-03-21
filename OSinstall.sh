@@ -457,7 +457,7 @@ DBCONFIG_PRESEED
 # Packages to install per install type
 case ${INSTALL} in
 	all|single)
-		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance keystone openstack-dashboard memcached"
+		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance keystone openstack-dashboard memcached python-memcache"
 		EXTRA_PACKAGES="euca2ools unzip qemu ntp python-dateutil"
 		MYSQL_INSTALL=1
 		GLANCE_INSTALL=1
@@ -466,7 +466,7 @@ case ${INSTALL} in
 		HORIZON_INSTALL=1
 		;;
 	controller)
-		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance keystone openstack-dashboard memcached"
+		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance keystone openstack-dashboard memcached python-memcache"
 		EXTRA_PACKAGES="euca2ools unzip qemu ntp python-dateutil"
 		MYSQL_INSTALL=1
 		GLANCE_INSTALL=1
