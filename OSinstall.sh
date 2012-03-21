@@ -215,8 +215,11 @@ keystone_install() {
 
 horizon_install() {
 	# Small amount of configuration
+	rm -f /etc/openstack-dashboard/local_settings.py
+	cp configs/local_settings.py /etc/openstack-dashboard/local_settings.py
 	mkdir -p /var/www/.novaclient
 	chown www-data /var/www/.novaclient
+	service apache2 restart
 }
 
 LOGFILE=/var/log/nova/nova-install.log
