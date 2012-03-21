@@ -213,6 +213,12 @@ keystone_install() {
 	./create-user -u $ADMIN -p openstack -t $TENANCY -C $CC_ADDR
 }
 
+horizon_install() {
+	# Small amount of configuration
+	mkdir -p /var/www/.novaclient
+	chown www-data /var/www/.novaclient
+}
+
 LOGFILE=/var/log/nova/nova-install.log
 mkdir -p /var/log/nova
 touch /var/log/nova/nova-install.log
@@ -448,20 +454,22 @@ DBCONFIG_PRESEED
 # Packages to install per install type
 case ${INSTALL} in
 	all|single)
-		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance keystone"
+		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance keystone openstack-dashboard memcached"
 		EXTRA_PACKAGES="euca2ools unzip qemu ntp python-dateutil"
 		MYSQL_INSTALL=1
 		GLANCE_INSTALL=1
 		KEYSTONE_INSTALL=1
 		RABBITMQ_INSTALL=1
+		HORIZON_INSTALL=1
 		;;
 	controller)
-		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance keystone"
+		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute glance keystone openstack-dashboard memcached"
 		EXTRA_PACKAGES="euca2ools unzip qemu ntp python-dateutil"
 		MYSQL_INSTALL=1
 		GLANCE_INSTALL=1
 		KEYSTONE_INSTALL=1
 		RABBITMQ_INSTALL=1
+		HORIZON_INSTALL=1
 		;;
 	compute|node)
 		NOVA_PACKAGES="nova-compute nova-network python-keystone"
@@ -508,6 +516,11 @@ fi
 if [ ! -z ${KEYSTONE_INSTALL} ]
 then
 	keystone_install
+fi
+
+if [ ! -z ${HORIZON_INSTALL} ]
+then
+	horizon_install
 fi
 
 
