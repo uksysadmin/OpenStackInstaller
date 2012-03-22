@@ -62,8 +62,8 @@ if [[ ! $USER_ID ]]
 then
 	# User doesn't exist, so lets create it based on the credentials given
 	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-create --name $KEYSTONE_USERNAME --tenant_id $TENANT_ID --pass $KEYSTONE_PASSWORD --email $KEYSTONE_USERNAME@localhost --enabled true
-	USER_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-list | awk / $KEYSTONE_USERNAME / '{print $2}')
-	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-create --user-id $USER_ID --tenant_id $TENANT_ID
+	USER_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-list | grep "\ $KEYSTONE_USERNAME\ " | awk '{print $2}')
+	keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-create --user $USER_ID --tenant_id $TENANT_ID
 
 	# Add the user to the relevant roles
 	KEYSTONE_USER_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-list | grep "\ $KEYSTONE_USERNAME\ " | awk '{print $2}')
@@ -86,8 +86,8 @@ then
 	# Nova Auth uses user/pass
 	# EC2 uses random generated EC2 strings
 
-	ACCESS_KEY=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-list --user-id $USER_ID | grep $KEYSTONE_TENANT | awk '{print $4}')
-	SECRET_KEY=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-list --user-id $USER_ID | grep $KEYSTONE_TENANT | awk '{print $6}')
+	ACCESS_KEY=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-list --user $USER_ID | grep $KEYSTONE_TENANT | awk '{print $4}')
+	SECRET_KEY=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-list --user $USER_ID | grep $KEYSTONE_TENANT | awk '{print $6}')
 
 	cat > ${KEYSTONE_USERNAME}rc << EOF
 NOVA_API_HOST=$ENDPOINT
