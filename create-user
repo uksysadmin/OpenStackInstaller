@@ -86,8 +86,8 @@ then
 	# Nova Auth uses user/pass
 	# EC2 uses random generated EC2 strings
 
-	ACCESS_KEY=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-list --user-id $ROLE_ID | grep $KEYSTONE_TENANT | awk '{print $4}')
-	SECRET_KEY=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-list --user $ROLE_ID | grep $KEYSTONE_TENANT | awk '{print $6}')
+	ACCESS_KEY=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-list --user-id $USER_ID | grep $KEYSTONE_TENANT | awk '{print $4}')
+	SECRET_KEY=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT ec2-credentials-list --user-id $USER_ID | grep $KEYSTONE_TENANT | awk '{print $6}')
 
 	cat > ${KEYSTONE_USERNAME}rc << EOF
 NOVA_API_HOST=$ENDPOINT
