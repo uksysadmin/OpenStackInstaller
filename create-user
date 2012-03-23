@@ -79,7 +79,7 @@ fi
 # Get the USER_ID (again)
 USER_ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT user-list | grep "\ $KEYSTONE_USERNAME\ " | awk '{print $2}')
 
-if [[ $TENANT_ID ]]
+if [[ $USER_ID ]]
 then
 	# Continue only if we got a TENANT_ID
 
