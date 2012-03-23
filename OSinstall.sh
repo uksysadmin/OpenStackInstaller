@@ -122,7 +122,7 @@ cat > /etc/nova/nova.conf << EOF
 --osapi_host=${CC_ADDR}
 --rabbit_host=${CC_ADDR}
 --auth_strategy=keystone
---keystone_ec2_url=http://${CC_ADDR}:5000/v2.0/tokens
+--keystone_ec2_url=http://${CC_ADDR}:5000/v2.0/ec2tokens
 --multi_host
 --send_arp_for_ha
 EOF
