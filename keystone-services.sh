@@ -78,7 +78,7 @@ keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT service-create --na
 # Create endpoints on the services
 for S in NOVA EC2 SWIFT GLANCE VOLUME KEYSTONE
 do
-	ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT service-list | grep -i $S | awk '{print $2}')
+	ID=$(keystone --token $SERVICE_TOKEN --endpoint $SERVICE_ENDPOINT service-list | grep -i "\ $S\ " | awk '{print $2}')
 	PUBLIC=$(eval echo \$${S}_PUBLIC_URL)
 	ADMIN=$(eval echo \$${S}_ADMIN_URL)
 	INTERNAL=$(eval echo \$${S}_INTERNAL_URL)
