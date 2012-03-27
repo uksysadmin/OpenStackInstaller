@@ -127,6 +127,11 @@ cat > /etc/nova/nova.conf << EOF
 --send_arp_for_ha
 EOF
 
+cat > /etc/nova/nova-compute.conf << EOF
+--libvirt_type=${VIRT}
+EOF
+
+
 	cp configs/api-paste.ini /tmp
 	sed -i "s/%CC_ADDR%/$CC_ADDR/g" /tmp/api-paste.ini
 	sed -i "s/%SERVICE_TENANT_NAME%/$TENANCY/g" /tmp/api-paste.ini
