@@ -183,6 +183,10 @@ glance_install() {
 	cp $TMPAREA/* /etc/glance
 
 	stop glance-registry
+
+	glance-manage version_control 0
+	glance-manage db_sync
+
 	start glance-registry
 }
 
