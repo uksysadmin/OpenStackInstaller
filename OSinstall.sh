@@ -484,7 +484,7 @@ case ${INSTALL} in
 		HORIZON_INSTALL=1
 		;;
 	compute|node)
-		NOVA_PACKAGES="nova-compute nova-network python-keystone"
+		NOVA_PACKAGES="nova-compute nova-network nova-api python-keystone"
 		EXTRA_PACKAGES="euca2ools unzip qemu ntp python-dateutil"
 		;;
 esac
