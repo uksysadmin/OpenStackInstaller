@@ -269,7 +269,7 @@ LOCAL_MYSQL_INSTALL=1
 
 
 # Process Command Line
-while getopts T:N:s:n:p:f:P:F:V:C:A:v:t:hy opts
+while getopts T:N:s:n:p:f:P:F:V:C:A:v:t:M:hy opts
 do
   case $opts in
     T)
