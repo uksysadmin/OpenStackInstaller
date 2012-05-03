@@ -34,20 +34,21 @@ fi
 usage() {
 cat << USAGE
 Syntax
-    OSinstall.sh -T {type} -s { network size } -n {number of networks} -p {public interface} -P {private interface} -f {floating_range} -F {fixed_range} -V {VLAN start} -C {Controller Address} -A {admin} -v {qemu | kvm} -t {default tenancy}
+    OSinstall.sh -T {type} -s { network size } -n {number of networks} -p {public interface} -P {private interface} -f {floating_range} -F {fixed_range} -V {VLAN start} -C {Controller Address} -A {admin} -v {qemu | kvm} -t {default tenancy} -M {ip of MySQL service}
 
-    -T: Installation type: all (single node) | controller | compute
-    -s: Network size (IP address range on this network)
-    -n: Number of networks to create
-    -P: Public network interface
-    -F: Floating (Public) IP range
+    -T: Installation type: all (single node) | controller | compute (default all)
+    -s: Network size (IP address range on this network) (default 64)
+    -n: Number of networks to create (default 1)
+    -P: Public network interface (default network with default gw)
+    -F: Floating (Public) IP range e.g. 172.16.1.0/24
     -p: Private network interface
     -f: Fixed (Private) IP range e.g. 10.0.0.0/8
-    -V: VLAN Start
-    -C: Cloud Controller Address (if left blank, will work it out but is required for node installs)
-    -A: Admin username
-    -v: Virtualization type: qemu for software, kvm for kvm (hardware)
-    -t: Tenancy (Project)
+    -V: VLAN Start (default 100)
+    -C: Cloud Controller Address (default is worked out from public interface IP)
+    -A: Admin username (default admin)
+    -v: Virtualization type: qemu for software, kvm for kvm (hardware) (default qemu)
+    -t: Tenancy (Project) (default demo)
+    -M: MySQL IP (default Cloud Controller address)
 USAGE
 exit 1
 }
@@ -90,7 +91,7 @@ cat > /etc/nova/nova.conf << EOF
 --connection_type=libvirt
 --libvirt_type=${VIRT}
 --libvirt_use_virtio_for_bridges
---sql_connection=mysql://nova:${MYSQL_PASS}@${CC_ADDR}/nova
+--sql_connection=mysql://nova:${MYSQL_PASS}@${MYSQL_ADDR}/nova
 --s3_host=${CC_ADDR}
 --s3_dmz=${CC_ADDR}
 --rabbit_host=${CC_ADDR}
@@ -144,7 +145,7 @@ EOF
 	rm -f /tmp/api-paste.ini
 }
 
-mysql_install() {
+local_mysql_install() {
 	echo "Configuring MySQL for OpenStack"
 
 	# MySQL - set root user in MySQL to $MYSQL_PASS
@@ -168,6 +169,16 @@ MYSQL_PRESEED
 	done
 }
 
+remote_mysql_install() {
+	# Create Databases
+	for D in nova glance keystone
+	do
+		mysql -uroot -p$MYSQL_PASS -h ${MYSQL_ADDR} -e "CREATE DATABASE $D;"
+		mysql -uroot -p$MYSQL_PASS -h ${MYSQL_ADDR} -e "GRANT ALL PRIVILEGES ON $D.* TO '$D'@'%' WITH GRANT OPTION;"
+		mysql -uroot -p$MYSQL_PASS -h ${MYSQL_ADDR} -e "SET PASSWORD FOR '$D'@'%' = PASSWORD('$MYSQL_PASS');"
+	done
+}
+
 glance_install() {
 	# Configure glance configs
 	# Grab from local github repo
@@ -179,6 +190,7 @@ glance_install() {
 	# Configure files (sed info in)
 	sed -i "s/%CC_ADDR%/$CC_ADDR/g" $TMPAREA/*.*
 	sed -i "s/%ADMIN_TOKEN%/$KEYSTONE_ADMIN_TOKEN/g" $TMPAREA/*.*
+	sed -i "s/%MYSQL_ADDR%/$MYSQL_ADDR/g" $TMPAREA/*.*
 	sed -i "s/%MYSQL_PASS%/$MYSQL_PASS/g" $TMPAREA/*.*
 
 	# Put in place
@@ -204,6 +216,7 @@ keystone_install() {
 
 	# Configure files (sed info in)
 	sed -i "s/%CC_ADDR%/$CC_ADDR/g" $TMPAREA/*.*
+	sed -i "s/%MYSQL_ADDR%/$MYSQL_ADDR/g" $TMPAREA/*.*
 	sed -i "s/%MYSQL_PASS%/$MYSQL_PASS/g" $TMPAREA/*.*
 
 	# Put in place
@@ -252,6 +265,7 @@ DEFAULT_VLAN_START=100
 DEFAULT_VIRT="qemu"
 DEFAULT_INSTALL="all"
 DEFAULT_TENANCY="demo"
+LOCAL_MYSQL_INSTALL=1
 
 
 # Process Command Line
@@ -300,6 +314,10 @@ do
 	;;
     t)
 	TENANCY=${OPTARG}
+	;;
+    M)
+	MYSQL_ADDR=${OPTARG}
+	LOCAL_MYSQL_INSTALL=0
 	;;
     y)
 	AUTO=1
@@ -371,6 +389,11 @@ fi
 if [ -z ${INSTALL} ]
 then
 	INSTALL=${DEFAULT_INSTALL}
+fi
+
+if [ -z ${MYSQL_ADDR} ]
+then
+	MYSQL_ADDR=${CC_ADDR}
 fi
 
 # Work out DEFAULT_FLOATING from public interface
@@ -521,7 +544,13 @@ configure_nova
 
 if [ ! -z ${MYSQL_INSTALL} ]
 then
-	mysql_install
+	# If -M was specified then skip to remote_mysql_install
+	if  [[ ${LOCAL_MYSQL_INSTALL} -eq 1  ]]
+	then
+		local_mysql_install
+	else
+		remote_mysql_install
+	fi
 fi
 
 if [ ! -z ${GLANCE_INSTALL} ]
