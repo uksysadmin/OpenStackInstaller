@@ -3,10 +3,10 @@
 # Simple script to download Ubuntu Oneiric 11.10 from ubuntu.com
 # and publish to cloud environment for use
 
-ARCH=i386
+ARCH=amd64
 DISTRO=ubuntu
-CODENAME=oneiric
-VERSION=11.10
+CODENAME=precise
+VERSION=12.04
 TARBALL=${DISTRO}-${VERSION}-server-cloudimg-${ARCH}.tar.gz
 
 TMPAREA=/tmp/__upload
