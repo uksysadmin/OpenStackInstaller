@@ -125,6 +125,10 @@ cat > /etc/nova/nova.conf << EOF
 --keystone_ec2_url=http://${CC_ADDR}:5000/v2.0/ec2tokens
 --multi_host
 --send_arp_for_ha
+--novnc_enabled=true
+--novncproxy_base_url=http://${CC_ADDR}:6080/vnc_auto.html
+--vncserver_proxyclient_address=${CC_ADDR}
+--vncserver_listen=${CC_ADDR}
 EOF
 
 cat > /etc/nova/nova-compute.conf << EOF
@@ -466,7 +470,7 @@ DBCONFIG_PRESEED
 # Packages to install per install type
 case ${INSTALL} in
 	all|single)
-		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute nova-cert glance keystone openstack-dashboard memcached python-memcache"
+		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute nova-cert glance keystone openstack-dashboard memcached python-memcache novnc nova-consoleauth nova-console"
 		EXTRA_PACKAGES="euca2ools unzip qemu ntp python-dateutil"
 		MYSQL_INSTALL=1
 		GLANCE_INSTALL=1
@@ -475,7 +479,7 @@ case ${INSTALL} in
 		HORIZON_INSTALL=1
 		;;
 	controller)
-		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute nova-cert glance keystone openstack-dashboard memcached python-memcache"
+		NOVA_PACKAGES="nova-api nova-objectstore nova-scheduler nova-network nova-compute nova-cert glance keystone openstack-dashboard memcached python-memcache novnc nova-consoleauth nova-console"
 		EXTRA_PACKAGES="euca2ools unzip qemu ntp python-dateutil"
 		MYSQL_INSTALL=1
 		GLANCE_INSTALL=1
