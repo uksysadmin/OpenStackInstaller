@@ -188,7 +188,10 @@ glance_install() {
 	cp configs/glance* $TMPAREA
 
 	# Configure files (sed info in)
-    MYSQL_ADDR=${CC_ADDR}
+    if [[ $LOCAL_MYSQL_INSTALL -eq 1 ]] 
+    then
+        MYSQL_ADDR=${CC_ADDR}
+    fi
 	sed -i "s/%ADMIN_TOKEN%/$KEYSTONE_ADMIN_TOKEN/g" $TMPAREA/*.*
 	sed -i "s/%MYSQL_ADDR%/$MYSQL_ADDR/g" $TMPAREA/*.*
 	sed -i "s/%MYSQL_PASS%/$MYSQL_PASS/g" $TMPAREA/*.*
@@ -215,8 +218,12 @@ keystone_install() {
 	cp configs/keystone.conf $TMPAREA
 
 	# Configure files (sed info in)
-    MYSQL_ADDR=${CC_ADDR}
-	sed -i "s/%MYSQL_ADDR%/$MYSQL_ADDR/g" $TMPAREA/*.*
+    if [[ $LOCAL_MYSQL_INSTALL -eq 1 ]] 
+    then
+        MYSQL_ADDR=${CC_ADDR}
+    fi
+	
+    sed -i "s/%MYSQL_ADDR%/$MYSQL_ADDR/g" $TMPAREA/*.*
 	sed -i "s/%MYSQL_PASS%/$MYSQL_PASS/g" $TMPAREA/*.*
 
 	# Put in place
