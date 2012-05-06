@@ -273,7 +273,6 @@ DEFAULT_VIRT="qemu"
 DEFAULT_INSTALL="all"
 DEFAULT_TENANCY="demo"
 LOCAL_MYSQL_INSTALL=1
-MYSQL_ADDR="127.0.0.1"
 
 
 # Process Command Line
@@ -411,6 +410,7 @@ then
 	FLOATING_RANGE=${DEFAULT_FLOATING}
 fi
 
+CC_ADDR=""
 
 if [ -z ${CC_ADDR} ]
 then
