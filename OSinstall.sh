@@ -273,6 +273,7 @@ DEFAULT_VIRT="qemu"
 DEFAULT_INSTALL="all"
 DEFAULT_TENANCY="demo"
 LOCAL_MYSQL_INSTALL=1
+MYSQL_ADDR="127.0.0.1"
 
 
 # Process Command Line
@@ -454,6 +455,7 @@ OpenStack will be installed with these options:
   Public Interface = ${PUBLIC_INTERFACE}
   >> Public Floating network = ${FLOATING_RANGE}
   Cloud Controller (API, Keystone + Glance) = ${CC_ADDR}
+  MySQL Address = ${MYSQL_ADDR}
   Virtualization Type: ${VIRT}
 
   Note: The larger the public floating range, the longer it takes to create the entries
@@ -466,7 +468,7 @@ OpenStack will be installed with these options:
 
 	Tenancy: ${TENANCY}
 	Role: Member, Admin
-	Credentials ${ADMIN}:${TENANCY}
+    Credentials: User ${ADMIN} / Pass openstack
 CONFIG
 
 if [ -z ${AUTO} ]
