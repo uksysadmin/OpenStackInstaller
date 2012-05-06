@@ -399,10 +399,6 @@ then
 	INSTALL=${DEFAULT_INSTALL}
 fi
 
-if [ -z ${MYSQL_ADDR} ]
-then
-	MYSQL_ADDR=${CC_ADDR}
-fi
 
 # Work out DEFAULT_FLOATING from public interface
 _NETWORK=$(/sbin/route -n | grep ${PUBLIC_INTERFACE} | egrep -v UG | awk '{print $1}')
@@ -440,7 +436,12 @@ then
 			;;
 	esac
 fi
-		
+	
+if [ -z ${MYSQL_ADDR} ]
+then
+MYSQL_ADDR=${CC_ADDR}
+fi
+
 
 # Verification (if -y isn't specified)
 cat << CONFIG
