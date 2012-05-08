@@ -1,0 +1,7 @@
+Syntax
+    install.sh takes the following options
+
+    -s {all | controller | compute } 
+	Installation service: all (single node) | controller | compute | keystone | mysql | glance | horizon
+    -y  (Auto install, don't prompt user)
+    -h: Produces this help
