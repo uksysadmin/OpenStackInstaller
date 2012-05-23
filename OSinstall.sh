@@ -412,8 +412,6 @@ then
 	FLOATING_RANGE=${DEFAULT_FLOATING}
 fi
 
-CC_ADDR=""
-
 if [ -z ${CC_ADDR} ]
 then
 	# Check we're not a compute node install
