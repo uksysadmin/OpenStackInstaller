@@ -170,6 +170,7 @@ MYSQL_PRESEED
 }
 
 remote_mysql_install() {
+	apt-get -y install mysql-client
 	# Create Databases
 	for D in nova glance keystone
 	do
@@ -411,8 +412,6 @@ if [ -z ${FLOATING_RANGE} ]
 then
 	FLOATING_RANGE=${DEFAULT_FLOATING}
 fi
-
-CC_ADDR=""
 
 if [ -z ${CC_ADDR} ]
 then
