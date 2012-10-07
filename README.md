@@ -12,7 +12,7 @@ Create a VM or have available a server with specs similar to below:
         * 20Gb Hard Disk
         * 2 Nics - eth0 Public, eth1 Private
 
-TODO: Script to create a test VM
+Experimental: Check out the 'virtualbox' directory for scripts for use with Vagrant and shell scripts for creating VirtualBox instances. TODO: All hard coded IPs, etc - will make more flexible.
 
 
 HOW TO DO IT
