@@ -31,22 +31,19 @@ glance_configure() {
 	sudo sed -i "s/%SERVICE_USER%/glance/g" $GLANCE_REGISTRY_PASTE
 	sudo sed -i "s/%SERVICE_PASSWORD%/$SERVICE_PASS/g" $GLANCE_REGISTRY_PASTE
 
-	# Database
-	sudo sed -i "s,^sql_connection.*,sql_connection = mysql://glance:$MYSQL_DB_PASS@$MYSQL_SERVER/glance,g" $GLANCE_REGISTRY_CONF
+	# Glance Conf
+	sudo sed -i "s/%SERVICE_TENANT_NAME%/$SERVICE_TENANT/g" $GLANCE_API_CONF
+	sudo sed -i "s/%SERVICE_USER%/glance/g" $GLANCE_API_CONF
+	sudo sed -i "s/%SERVICE_PASSWORD%/$SERVICE_PASS/g" $GLANCE_API_CONF
 	sudo sed -i "s,^sql_connection.*,sql_connection = mysql://glance:$MYSQL_DB_PASS@$MYSQL_SERVER/glance,g" $GLANCE_API_CONF
+	sudo sed -i "s/^#config_file/config_file/g" $GLANCE_API_CONF
 
-	# Add Paste Lines
-	if [[ ! $(sudo grep "^\[paste_deploy\]" $GLANCE_REGISTRY_CONF) ]]
-	then
-		echo "[paste_deploy]
-flavor = keystone" | sudo tee -a $GLANCE_REGISTRY_CONF
-	fi
-
-	if [[ ! $(sudo grep "^\[paste_deploy\]" $GLANCE_API_CONF) ]]
-	then
-		echo "[paste_deploy]
-flavor = keystone" | sudo tee -a $GLANCE_API_CONF
-	fi
+	# Glance Conf
+	sudo sed -i "s/%SERVICE_TENANT_NAME%/$SERVICE_TENANT/g" $GLANCE_REGISTRY_CONF
+	sudo sed -i "s/%SERVICE_USER%/glance/g" $GLANCE_REGISTRY_CONF
+	sudo sed -i "s/%SERVICE_PASSWORD%/$SERVICE_PASS/g" $GLANCE_REGISTRY_CONF
+	sudo sed -i "s,^sql_connection.*,sql_connection = mysql://glance:$MYSQL_DB_PASS@$MYSQL_SERVER/glance,g" $GLANCE_REGISTRY_CONF
+	sudo sed -i "s/^#config_file/config_file/g" $GLANCE_REGISTRY_CONF
 
 	sudo glance-manage db_sync
 }
