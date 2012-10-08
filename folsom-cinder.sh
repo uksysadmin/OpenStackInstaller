@@ -29,6 +29,19 @@ cinder_configure() {
 	sudo sed -i "s,^sql_connection.*,sql_connection = mysql://cinder:$MYSQL_DB_PASS@$MYSQL_SERVER/cinder,g" $CINDER_CONF
 }
 
+cinder_device_configure() {
+	# Configure raw disk for use by Cinder if set
+	if [[ $CINDER_DEVICE ]]
+	then
+		sudo partprobe
+		sudo parted /dev/sdb mklabel msdos
+		sudo parted /dev/sdb mkpart primary ext2 4 $CINDER_DEVICE_SIZE_MB
+		sudo parted /dev/sdb set 1 lvm on
+		pvgcreate /dev/sdb1
+		vgcreate cinder-volumes /dev/sdb1
+	fi		
+}
+
 cinder_restart() {
 	sudo stop cinder-api
 	sudo start cinder-api
@@ -39,4 +52,5 @@ cinder_restart() {
 # Main
 cinder_install
 cinder_configure
+cinder_device_configure
 cinder_restart
