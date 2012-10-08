@@ -58,7 +58,14 @@ glance_restart() {
 	sudo start glance-registry
 }
 
+glance_upload_image() {
+	sudo wget -c https://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img -O cirros.img
+	. adminrc
+	glance add name=cirros-0.3.0-x86_64 disk_format=qcow2 container_format=bare < cirros.img
+}
+
 # Main
 glance_install
 glance_configure
 glance_restart
+glance_upload_image
