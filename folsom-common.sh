@@ -30,7 +30,7 @@ install_base_packages() {
 }
 
 configure_mysql() {
-	sudo sed -i 's/bind-address.*/bind-address     = $MYSQL_SERVER/' /etc/mysql/my.cnf
+	sudo sed -i "s/bind-address.*/bind-address     = $MYSQL_SERVER/" /etc/mysql/my.cnf
 	sudo service mysql restart
 }
 
