@@ -13,7 +13,6 @@ NOVA_CONF=/etc/nova/nova.conf
 NOVA_API_PASTE=/etc/nova/api-paste.ini
 
 nova_install() {
-	sudo apt-get update
 	sudo apt-get -y install nova-api nova-cert nova-compute nova-compute-qemu nova-doc nova-network nova-objectstore nova-scheduler nova-volume rabbitmq-server novnc nova-consoleauth python-cinderclient
 }
 

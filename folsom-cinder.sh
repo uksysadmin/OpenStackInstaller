@@ -15,7 +15,6 @@ CINDER_CONF=/etc/cinder/cinder.conf
 CINDER_API_PASTE=/etc/cinder/api-paste.ini
 
 cinder_install() {
-	sudo apt-get update
 	sudo apt-get -y install cinder-api cinder-scheduler cinder-volume open-iscsi python-cinderclient tgt
 }
 

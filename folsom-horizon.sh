@@ -12,7 +12,6 @@ fi
 DASHBOARD_LOCAL_SETTINGS=/etc/openstack-dashboard/local_settings.py
 
 horizon_install() {
-	sudo apt-get update
 	sudo apt-get -y install apache2 openstack-dashboard memcached
 }
 

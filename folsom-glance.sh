@@ -15,7 +15,6 @@ GLANCE_API_PASTE=/etc/glance/glance-api-paste.ini
 GLANCE_REGISTRY_PASTE=/etc/glance/glance-registry-paste.ini
 
 glance_install() {
-	sudo apt-get update
 	sudo apt-get -y install glance glance-api python-glanceclient glance-common glance-registry python-glance
 }
 
