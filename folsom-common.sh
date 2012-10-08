@@ -19,12 +19,19 @@ configure_package_archive() {
 }
 
 install_base_packages() {
-	cat <<MYSQL_PRESEED | debconf-set-selections
-mysql-server-5.5 mysql-server/root_password password $MYSQL_ROOT_PASS
-mysql-server-5.5 mysql-server/root_password_again password $MYSQL_ROOT_PASS
-mysql-server-5.5 mysql-server/start_on_boot boolean true
-MYSQL_PRESEED
+	cat <<PRESEED | debconf-set-selections
+mysql-server-5.5 mysql-server-5.5/root_password password $MYSQL_ROOT_PASS
+mysql-server-5.5 mysql-server-5.5/root_password_again password $MYSQL_ROOT_PASS
+mysql-server-5.5 mysql-server-5.5/start_on_boot boolean true
+grub-pc grub-pc/install_devices multiselect /dev/sda
+grub-pc grub-pc/install_devices_disks_changed multiselect /dev/sda  
+PRESEED
 	sudo apt-get -y install vlan bridge-utils ntp mysql-server python-mysqldb
+}
+
+configure_mysql() {
+	sudo sed -i 's/bind-address.*/bind-address     = $MYSQL_SERVER/' /etc/mysql/my.cnf
+	sudo service mysql restart
 }
 
 recreate_databases() {
@@ -42,4 +49,5 @@ recreate_databases() {
 # Main
 configure_package_archive
 install_base_packages
+configure_mysql
 recreate_databases
