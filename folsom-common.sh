@@ -19,7 +19,11 @@ configure_package_archive() {
 }
 
 install_base_packages() {
-	sudo apt-get update
+	cat <<MYSQL_PRESEED | debconf-set-selections
+mysql-server-5.5 mysql-server/root_password password $MYSQL_ROOT_PASS
+mysql-server-5.5 mysql-server/root_password_again password $MYSQL_ROOT_PASS
+mysql-server-5.5 mysql-server/start_on_boot boolean true
+MYSQL_PRESEED
 	sudo apt-get -y install vlan bridge-utils ntp mysql-server python-mysqldb
 }
 
