@@ -15,17 +15,17 @@ configure_package_archive() {
 	echo "deb http://ubuntu-cloud.archive.canonical.com/ubuntu precise-proposed/folsom main" | sudo tee -a /etc/apt/sources.list.d/folsom.list
 	sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 5EDB1B62EC4926EA
 	sudo apt-get update
-	sudo apt-get -y dist-upgrade
+	echo "grub-pc grub-pc/install_devices multiselect /dev/sda" | sudo debconf-set-selections
+	echo "grub-pc grub-pc/install_devices_disks_changed multiselect /dev/sda" | sudo debconf-set-selections
+	sudo apt-get -y upgrade
 }
 
 install_base_packages() {
-	cat <<PRESEED | debconf-set-selections
-mysql-server-5.5 mysql-server-5.5/root_password password $MYSQL_ROOT_PASS
-mysql-server-5.5 mysql-server-5.5/root_password_again password $MYSQL_ROOT_PASS
-mysql-server-5.5 mysql-server-5.5/start_on_boot boolean true
-grub-pc grub-pc/install_devices multiselect /dev/sda
-grub-pc grub-pc/install_devices_disks_changed multiselect /dev/sda  
-PRESEED
+	echo "mysql-server-5.5 mysql-server/root_password password $MYSQL_ROOT_PASS" | sudo debconf-set-selections
+	echo "mysql-server-5.5 mysql-server/root_password_again password $MYSQL_ROOT_PASS" | sudo debconf-set-selections
+	echo "mysql-server-5.5 mysql-server/root_password seen true" | sudo debconf-set-selections
+	echo "mysql-server-5.5 mysql-server/root_password_again seen true" | sudo debconf-set-selections
+
 	sudo apt-get -y install vlan bridge-utils ntp mysql-server python-mysqldb
 }
 
