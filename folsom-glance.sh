@@ -36,14 +36,14 @@ glance_configure() {
 	sudo sed -i "s/%SERVICE_USER%/glance/g" $GLANCE_API_CONF
 	sudo sed -i "s/%SERVICE_PASSWORD%/$SERVICE_PASS/g" $GLANCE_API_CONF
 	sudo sed -i "s,^sql_connection.*,sql_connection = mysql://glance:$MYSQL_DB_PASS@$MYSQL_SERVER/glance,g" $GLANCE_API_CONF
-	sudo sed -i "s/^#config_file/config_file/g" $GLANCE_API_CONF
+	sudo sed -i "s,^#config_file.*,config_file = /etc/glance/glance-api-paste.ini,g" $GLANCE_API_CONF
 
 	# Glance Conf
 	sudo sed -i "s/%SERVICE_TENANT_NAME%/$SERVICE_TENANT/g" $GLANCE_REGISTRY_CONF
 	sudo sed -i "s/%SERVICE_USER%/glance/g" $GLANCE_REGISTRY_CONF
 	sudo sed -i "s/%SERVICE_PASSWORD%/$SERVICE_PASS/g" $GLANCE_REGISTRY_CONF
 	sudo sed -i "s,^sql_connection.*,sql_connection = mysql://glance:$MYSQL_DB_PASS@$MYSQL_SERVER/glance,g" $GLANCE_REGISTRY_CONF
-	sudo sed -i "s/^#config_file/config_file/g" $GLANCE_REGISTRY_CONF
+	sudo sed -i "s,^#config_file.*,config_file = /etc/glance/glance-registry-paste.ini,g" $GLANCE_REGISTRY_CONF
 
 	sudo glance-manage db_sync
 }
