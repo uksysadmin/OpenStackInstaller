@@ -6,22 +6,33 @@ Vagrant::Config.run do |config|
   # options are documented and commented below. For a complete reference,
   # please see the online documentation at vagrantup.com.
 
-  # Every Vagrant virtual environment requires a box to build off of.
-  config.vm.box = "precise64"
+  config.vm.define :openstack do |openstack_config|
 
-  # The url from where the 'config.vm.box' box will be fetched if it
-  # doesn't already exist on the user's system.
-  config.vm.box_url = "http://files.vagrantup.com/precise64.box"
+    # Every Vagrant virtual environment requires a box to build off of.
+    openstack_config.vm.box = "precise64"
 
-  # Boot with a GUI so you can see the screen. (Default is headless)
-  # config.vm.boot_mode = :gui
+    openstack_config.vm.host_name = "openstack"
 
-  # Assign this VM to a host-only network IP, allowing you to access it
-  # via the IP. Host-only networks can talk to the host machine as well as
-  # any other machines on the same network, but cannot be accessed (through this
-  # network interface) by any external networks.
-  config.vm.network :hostonly, "172.16.0.201", :netmask => "255.255.0.0"
-  config.vm.network :hostonly, "10.0.0.201"
+    # The url from where the 'config.vm.box' box will be fetched if it
+    # doesn't already exist on the user's system.
+    openstack_config.vm.box_url = "http://files.vagrantup.com/precise64.box"
 
-  config.vm.provision :shell, :path => "vagrant-openstack-bootstrap.sh"
+    # Boot with a GUI so you can see the screen. (Default is headless)
+    # config.vm.boot_mode = :gui
+
+    # Assign this VM to a host-only network IP, allowing you to access it
+    # via the IP. Host-only networks can talk to the host machine as well as
+    # any other machines on the same network, but cannot be accessed (through this
+    # network interface) by any external networks.
+    openstack_config.vm.network :hostonly, "172.16.0.201", :netmask => "255.255.0.0"
+    openstack_config.vm.network :hostonly, "10.0.0.201"
+
+    # Customise the VM virtual hardware
+    openstack_config.vm.customize ["modifyvm", :id, "--memory", 2048]
+    openstack_config.vm.customize ["createhd", "--filename", "openstack-cinder.vdi", "--size", 20480]
+    openstack_config.vm.customize ["storageattach", :id, "--storagectl", "SATA Controller","--port", 1, "--device", 0, "--type", "hdd", "--medium", "openstack-cinder.vdi"] 
+  
+    # Execute the installation scripts (via SSH)
+    openstack_config.vm.provision :shell, :path => "vagrant-openstack-bootstrap.sh"
+  end
 end
