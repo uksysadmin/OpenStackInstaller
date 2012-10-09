@@ -34,11 +34,11 @@ cinder_device_configure() {
 	if [[ $CINDER_DEVICE ]]
 	then
 		sudo partprobe
-		sudo parted /dev/sdb mklabel msdos
-		sudo parted /dev/sdb mkpart primary ext2 4 $CINDER_DEVICE_SIZE_MB
-		sudo parted /dev/sdb set 1 lvm on
-		pvgcreate /dev/sdb1
-		vgcreate cinder-volumes /dev/sdb1
+		sudo parted $CINDER_DEVICE mklabel msdos
+		sudo parted $CINDER_DEVICE mkpart primary ext2 4 $CINDER_DEVICE_SIZE_MB
+		sudo parted $CINDER_DEVICE set 1 lvm on
+		pvgcreate ${CINDERDEVICE}1
+		vgcreate cinder-volumes ${CINDER_DEVICE}1
 	fi		
 }
 
