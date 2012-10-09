@@ -9,7 +9,8 @@ Create a VM or have available a server with specs similar to below:
 
         * 2vCPU
         * 2048 Mb Ram
-        * 20Gb Hard Disk
+        * 20Gb Hard Disk (/dev/sda)
+	* 20Gb Hard Disk (/dev/sdb) for Cinder
         * 2 Nics - eth0 Public, eth1 Private
 
 Experimental: Check out the 'virtualbox' directory for scripts for use with Vagrant and shell scripts for creating VirtualBox instances. TODO: All hard coded IPs, etc - will make more flexible.
@@ -34,6 +35,13 @@ HOW TO DO IT
         * Private range defined: 10.0.0.0/24
         * Floating range is 192.168.2.0/24
         * Hardware virtualization is defined (kvm)
+	* Installation will partition /dev/sdb and create LVM volume by default
+
+	Note: To disable Cinder creating a partition on /dev/sdb comment out:
+
+	# CINDER_DEVICE=/dev/sdb
+
+	WARNING! Do NOT set this to be your boot disk, e.g. /dev/sda
 
 4. Run the installer:
 
