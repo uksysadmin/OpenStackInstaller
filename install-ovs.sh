@@ -16,7 +16,7 @@ ovs_install() {
 }
 
 ovs_configure() {
-	sudo ovs-vsctl add-rb br-int
+	sudo ovs-vsctl add-br br-int
 	sudo ovs-vsctl add-br br-ex
 	sudo ovs-vsctl br-set-external-id br-ex bridge-id br-ex
 	sudo ovs-vsctl add-port br-ex $OVS_EXTERNAL_INTERFACE
