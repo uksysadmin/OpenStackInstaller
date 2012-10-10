@@ -34,6 +34,7 @@ cc_host=$NOVA_ENDPOINT
 nova_url=http://$NOVA_ENDPOINT:8774/v1.1/
 sql_connection=mysql://nova:$MYSQL_DB_PASS@$MYSQL_SERVER/nova
 ec2_url=http://$EC2_ENDPOINT:8773/services/Cloud
+rootwrap_config=/etc/nova/rootwrap.conf
 
 # Auth
 use_deprecated_auth=false
@@ -58,22 +59,31 @@ vncserver_proxyclient_address=127.0.0.1
 vncserver_listen=0.0.0.0
 
 # Network settings
-dhcpbridge_flagfile=/etc/nova/nova.conf
-dhcpbridge=/usr/bin/nova-dhcpbridge
-network_manager=nova.network.manager.VlanManager
-public_interface=$PUBLIC_INTERFACE
-vlan_interface=$PRIVATE_INTERFACE
-vlan_start=$VLAN_START
+#dhcpbridge_flagfile=/etc/nova/nova.conf
+#dhcpbridge=/usr/bin/nova-dhcpbridge
+#network_manager=nova.network.manager.VlanManager
+#public_interface=$PUBLIC_INTERFACE
+#vlan_interface=$PRIVATE_INTERFACE
+#vlan_start=$VLAN_START
 #fixed_range=$PRIVATE_RANGE
 #routing_source_ip=$NOVA_ENDPOINT
 #network_size=1
+network_api_class=nova.network.quantumv2.api.API
+quantum_url=http://$QUANTUM_ENDPOINT:9696
+quantum_auth_strategy=keystone
+quantum_admin_tenant_name=$SERVICE_TENANT
+quantum_admin_username=quantum
+quantum_admin_password=$SERVICE_PASS
+quantum_admin_auth_url=http://$KEYSTONE_ENDPOINT:35357/v2.0
+libvirt_vif_driver=nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver
+linuxnet_interface_driver=nova.network.linux_net.LinuxOVSInterfaceDriver
+firewall_driver=nova.virt.libvirt.firewall.IptablesFirewallDriver
 force_dhcp_release=True
-iscsi_helper=tgt
-iscsi_ip_address=$CINDER_ENDPOINT
-rootwrap_config=/etc/nova/rootwrap.conf
 multi_host=True
 
 # Cinder #
+iscsi_helper=tgt
+iscsi_ip_address=$CINDER_ENDPOINT
 volume_api_class=nova.volume.cinder.API
 osapi_volume_listen_port=5900
 EOF
