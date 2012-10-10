@@ -28,7 +28,8 @@ Vagrant::Config.run do |config|
     openstack_config.vm.network :hostonly, "10.0.0.201"
 
     # Customise the VM virtual hardware
-    openstack_config.vm.customize ["modifyvm", :id, "--memory", 2048]
+    openstack_config.vm.customize ["modifyvm", :id, "--memory", 3172]
+    openstack_config.vm.customize ["modifyvm", :id, "--cpus", 2]
     openstack_config.vm.customize ["createhd", "--filename", "openstack-cinder.vdi", "--size", 20480]
     openstack_config.vm.customize ["storageattach", :id, "--storagectl", "SATA Controller","--port", 1, "--device", 0, "--type", "hdd", "--medium", "openstack-cinder.vdi"] 
   
