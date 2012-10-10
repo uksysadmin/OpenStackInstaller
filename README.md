@@ -45,7 +45,7 @@ HOW TO DO IT
 
         * eth0 has been defined as 192.168.1.12/16
         * eth1 will be your private interface
-        * VLAN Manager will be used (Quantum soon!)
+        * Quantum will be used (need to tidy up configs on this)
         * Private range defined: 10.0.0.0/24
         * Floating range is 192.168.2.0/24
         * Hardware virtualization is defined (kvm)
