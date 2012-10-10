@@ -121,5 +121,5 @@ nova_restart() {
 # Main
 nova_install
 nova_configure
-nova_networking
+#nova_networking
 nova_restart
