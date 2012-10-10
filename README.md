@@ -3,6 +3,21 @@ OpenStackInstaller
 
 Now with added Folsom! Bring out the gimp! :)
 
+VAGRANT + VIRTUALBOX
+====================
+Check out this post on using these installation scripts with Vagrant and VirtualBox http://uksysadmin.wordpress.com/2012/10/09/easy-openstack-folsom-with-virtualbox-and-vagrant/
+
+1. Check out these scripts using Git
+2. Check out the 'folsom' branch
+3. Change to the 'virtualbox' directory
+4. Type: 'vagrant up'
+
+- Explore the scripts and Vagrantfile to ensure the settings match your environment
+
+ON REAL HARDWARE...
+===================
+If you prefer to do it for real...
+
 GETTING READY
 =============
 Create a VM or have available a server with specs similar to below:
@@ -13,7 +28,6 @@ Create a VM or have available a server with specs similar to below:
 	* 20Gb Hard Disk (/dev/sdb) for Cinder
         * 2 Nics - eth0 Public, eth1 Private
 
-Experimental: Check out the 'virtualbox' directory for scripts for use with Vagrant and shell scripts for creating VirtualBox instances. TODO: All hard coded IPs, etc - will make more flexible.
 
 
 HOW TO DO IT
@@ -39,7 +53,7 @@ HOW TO DO IT
 
 	Note: To disable Cinder creating a partition on /dev/sdb comment out:
 
-	# CINDER_DEVICE=/dev/sdb
+	CINDER_DEVICE=/dev/sdb
 
 	WARNING! Do NOT set this to be your boot disk, e.g. /dev/sda
 
@@ -57,3 +71,7 @@ HOW TO DO IT
 
 
 Kevin Jackson http://about.me/kevjackson
+
+THANKS
+======
+Huge thanks to Atul Jha (koolhead17) and Emilien Macchi (EmilenM) post http://my1.fr/blog/first-guide-to-deploy-openstack-folsom-on-ubuntu-12-04/
