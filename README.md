@@ -22,10 +22,10 @@ HOW TO DO IT
 
         * $ git clone https://github.com/uksysadmin/OpenStackInstaller.git
 
-2. Check out the 'folsom-experimental' branch
+2. Check out the 'folsom' branch
 
         * $ cd OpenStackInstaller
-        * $ git checkout folsom-experimental
+        * $ git checkout folsom
 
 3. Edit 'openstack.conf' file that describes your environment. By default this is defined as follows:
 
