@@ -4,7 +4,7 @@
 ./folsom-common.sh
 ./folsom-keystone.sh
 ./folsom-glance.sh
-./folsom-nova.sh
 ./folsom-quantum.sh
 ./folsom-cinder.sh
+./folsom-nova.sh
 ./folsom-horizon.sh
