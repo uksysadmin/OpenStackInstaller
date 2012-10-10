@@ -29,7 +29,7 @@ quantum_configure() {
 	sudo rm -f $OVS_QUANTUM_PLUGIN_INI
         cat >/tmp/ovs_quantum_plugin.ini << EOF
 [DATABASE]
-sql_connection = mysql://quantum:$MYSQL_DB_PASS@$MYSQL_SERVER:3306/glance
+sql_connection = mysql://quantum:$MYSQL_DB_PASS@$MYSQL_SERVER:3306/quantum
 reconnect_interval = 2
 [OVS]
 tenant_network_type = gre
