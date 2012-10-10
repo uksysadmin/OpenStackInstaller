@@ -26,6 +26,7 @@ Vagrant::Config.run do |config|
     # network interface) by any external networks.
     openstack_config.vm.network :hostonly, "172.16.0.201", :netmask => "255.255.0.0"
     openstack_config.vm.network :hostonly, "10.0.0.201"
+    openstack_config.vm.network :hostonly, "192.168.57.201"
 
     # Customise the VM virtual hardware
     openstack_config.vm.customize ["modifyvm", :id, "--memory", 3172]
@@ -34,6 +35,30 @@ Vagrant::Config.run do |config|
     openstack_config.vm.customize ["storageattach", :id, "--storagectl", "SATA Controller","--port", 1, "--device", 0, "--type", "hdd", "--medium", "openstack-cinder.vdi"] 
   
     # Execute the installation scripts (via SSH)
+    openstack_config.vm.provision :shell, :path => "vagrant-ovs-bootstrap.sh"
     openstack_config.vm.provision :shell, :path => "vagrant-openstack-bootstrap.sh"
   end
+
+  # OpenVSwitch VM
+  # config.vm.define :ovs do |ovs_config|
+
+    # Every Vagrant virtual environment requires a box to build off of.
+    # ovs_config.vm.box = "precise64"
+
+    # ovs_config.vm.host_name = "ovs"
+
+    # The url from where the 'config.vm.box' box will be fetched if it
+    # doesn't already exist on the user's system.
+    # ovs_config.vm.box_url = "http://files.vagrantup.com/precise64.box"
+
+    # ovs_config.vm.network :hostonly, "172.16.0.200", :netmask => "255.255.0.0"
+    # ovs_config.vm.network :hostonly, "10.0.0.200"
+
+    # Customise the VM virtual hardware
+    # ovs_config.vm.customize ["modifyvm", :id, "--memory", 2048]
+    # ovs_config.vm.customize ["modifyvm", :id, "--cpus", 1]
+  
+    # Execute the installation scripts (via SSH)
+    # ovs_config.vm.provision :shell, :path => "vagrant-ovs-bootstrap.sh"
+  # end
 end
