@@ -17,6 +17,7 @@ horizon_install() {
 
 horizon_configure() {
 	sudo sed -i 's/^QUANTUM_ENABLED.*/QUANTUM_ENABLED = False/g' $DASHBOARD_LOCAL_SETTINGS
+	echo "QUANTUM_ENABLED = False" | sudo tee -a $DASHBOARD_LOCAL_SETTINGS
 	sudo sed -i "s/^OPENSTACK_HOST.*/OPENSTACK_HOST = \"$KEYSTONE_ENDPOINT\"/g" $DASHBOARD_LOCAL_SETTINGS
 
 	# Default under Ubuntu is to install their theme. Can be overidden by setting HORIZON_THEME=default
