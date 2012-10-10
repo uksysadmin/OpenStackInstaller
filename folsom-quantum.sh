@@ -28,8 +28,8 @@ quantum_configure() {
  sudo sed -i "s,^sql_connection.*,sql_connection = mysql://glance:$MYSQL_DB_PASS@$MYSQL_SERVER/glance,g" $GLANCE_REGISTRY_CONF
 
 	# ovs_quantum_plugin.ini
-	rm -f $OVS_QUANTUM_PLUGIN_INI
-        cat > $OVS_QUANTUM_PLUGIN_INI << EOF
+	sudo rm -f $OVS_QUANTUM_PLUGIN_INI
+        cat >/tmp/ovs_quantum_plugin.ini << EOF
 [DATABASE]
 sql_connection = mysql://quantum:$MYSQL_DB_PASS@$MYSQL_SERVER:3306/glance
 reconnect_interval = 2
@@ -42,6 +42,10 @@ local_ip = 10.0.0.3
 [AGENT]
 root_helper = sudo /usr/bin/quantum-rootwrap /etc/quantum/rootwrap.conf
 EOF
+	sudo mv /tmp/ovs_quantum_plugin.ini $OVS_QUANTUM_PLUGIN_INI
+	sudo chown quantum:quantum $OVS_QUANTUM_PLUGIN_INI
+	sudo chmod 644 $OVS_QUANTUM_PLUGIN_INI
+	
 
 	# quantum_l3_agent.ini
         sudo sed -i "s/localhost/$KEYSTONE_ENDPOINT/g" $QUANTUM_L3_AGENT_INI
