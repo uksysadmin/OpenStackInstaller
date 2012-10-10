@@ -37,7 +37,7 @@ configure_mysql() {
 recreate_databases() {
 	# MySQL
 	# Create database
-	for d in nova glance cinder keystone ovs_quantum
+	for d in nova glance cinder keystone quantum
 	do
 		mysql -uroot -p$MYSQL_ROOT_PASS -e "drop database if exists $d;"
 		mysql -uroot -p$MYSQL_ROOT_PASS -e "create database $d;"
