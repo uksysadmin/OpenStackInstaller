@@ -25,8 +25,6 @@ quantum_configure() {
 	sudo sed -i 's/^ # fake_rabbit.*/fake_rabbit = False/g' $QUANTUM_CONF
 	sudo sed -i 's/^ # fake_rabbit.*/fake_rabbit = False/g' $QUANTUM_CONF
 
- sudo sed -i "s,^sql_connection.*,sql_connection = mysql://glance:$MYSQL_DB_PASS@$MYSQL_SERVER/glance,g" $GLANCE_REGISTRY_CONF
-
 	# ovs_quantum_plugin.ini
 	sudo rm -f $OVS_QUANTUM_PLUGIN_INI
         cat >/tmp/ovs_quantum_plugin.ini << EOF
