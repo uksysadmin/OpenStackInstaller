@@ -11,4 +11,8 @@
 
 # Creates a demo network for the admin tenant
 # Hard coded IPs in script which gets pulled by git for time being
-./folsom-quantum-createnetwork.sh
+if [[ -f adminrc ]]
+then
+	. adminrc
+	./folsom-quantum-createnetwork.sh
+fi
