@@ -36,7 +36,7 @@ tenant_network_type = gre
 tunnel_id_ranges = 1:1000
 integration_bridge = br-int
 tunnel_bridge = br-tun
-local_ip = 10.0.0.3
+local_ip = 10.0.0.201
 enable_tunneling = True
 [AGENT]
 root_helper = sudo /usr/bin/quantum-rootwrap /etc/quantum/rootwrap.conf
