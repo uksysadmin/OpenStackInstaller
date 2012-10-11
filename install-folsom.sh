@@ -8,3 +8,7 @@
 ./folsom-cinder.sh
 ./folsom-nova.sh
 ./folsom-horizon.sh
+
+# Creates a demo network for the admin tenant
+# Hard coded IPs in script which gets pulled by git for time being
+./folsom-quantum-createnetwork.sh
