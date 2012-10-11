@@ -46,8 +46,13 @@ recreate_databases() {
 	done
 }
 
+system_tuning() {
+	sudo sed -i 's/^#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
+}
+
 # Main
 configure_package_archive
 install_base_packages
 configure_mysql
 recreate_databases
+system_tuning
