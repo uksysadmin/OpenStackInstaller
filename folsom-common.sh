@@ -13,7 +13,8 @@ configure_package_archive() {
 	#echo "deb http://ubuntu-cloud.archive.canonical.com/ubuntu precise-updates/folsom main" | sudo tee -a /etc/apt/sources.list.d/folsom.list
 	sudo rm -f /etc/apt/sources.list.d/folsom.list
 	echo "deb http://ubuntu-cloud.archive.canonical.com/ubuntu precise-proposed/folsom main" | sudo tee -a /etc/apt/sources.list.d/folsom.list
-	sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 5EDB1B62EC4926EA
+	# sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 5EDB1B62EC4926EA
+	sudo apt-get -y install ubuntu-cloud-keyring
 	sudo apt-get update
 	echo "grub-pc grub-pc/install_devices multiselect /dev/sda" | sudo debconf-set-selections
 	echo "grub-pc grub-pc/install_devices_disks_changed multiselect /dev/sda" | sudo debconf-set-selections
