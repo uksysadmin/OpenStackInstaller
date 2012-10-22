@@ -25,3 +25,8 @@ ovs_configure() {
 # Main
 ovs_install
 ovs_configure
+
+# Configure br-ex to reach public network :
+sudo ip addr flush dev br-ex
+sudo ip addr add ${FLOAT_GATEWAY}/255.255.255.0 dev br-ex
+sudo ip link set br-ex up
