@@ -37,7 +37,7 @@ cinder_device_configure() {
 		sudo parted $CINDER_DEVICE mklabel msdos
 		sudo parted $CINDER_DEVICE mkpart primary ext2 4 $CINDER_DEVICE_SIZE_MB
 		sudo parted $CINDER_DEVICE set 1 lvm on
-		pvgcreate ${CINDERDEVICE}1
+		pvcreate ${CINDERDEVICE}1
 		vgcreate cinder-volumes ${CINDER_DEVICE}1
 	fi		
 }
