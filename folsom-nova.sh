@@ -13,7 +13,7 @@ NOVA_CONF=/etc/nova/nova.conf
 NOVA_API_PASTE=/etc/nova/api-paste.ini
 
 nova_install() {
-	sudo apt-get -y install nova-api nova-cert nova-compute nova-compute-qemu nova-doc nova-network nova-objectstore nova-scheduler nova-volume rabbitmq-server novnc nova-consoleauth python-cinderclient
+	sudo apt-get -y install nova-api nova-cert nova-compute nova-compute-qemu nova-doc nova-network nova-objectstore nova-scheduler nova-volume rabbitmq-server novnc nova-novncproxy nova-consoleauth python-cinderclient
 }
 
 nova_configure() {
@@ -55,8 +55,8 @@ resume_guests_state_on_host_boot=false
 novnc_enabled=true
 novncproxy_base_url=http://$NOVA_ENDPOINT:6080/vnc_auto.html
 novncproxy_port=6080
-vncserver_proxyclient_address=127.0.0.1
-vncserver_listen=0.0.0.0
+vncserver_proxyclient_address=$NOVA_ENDPOINT
+vncserver_listen=$NOVA_ENDPOINT
 
 # Network settings
 #dhcpbridge_flagfile=/etc/nova/nova.conf
