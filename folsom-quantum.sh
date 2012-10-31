@@ -34,7 +34,7 @@ reconnect_interval = 2
 [OVS]
 tenant_network_type = gre
 tunnel_id_ranges = 1:1000
-integration_bridge = br-int
+integration_bridge = ${INT_BRIDGE}
 tunnel_bridge = br-tun
 local_ip = 10.0.0.201
 enable_tunneling = True
