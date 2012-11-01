@@ -25,7 +25,7 @@ TENANT_NET_ID=$(get_id quantum net-create --tenant_id $TENANT_ID ${TENANT_NETWOR
 
 # Create the private network range in this named network
 # SUBNET_ID=$(get_id quantum subnet-create --tenant_id ${TENANT_ID} --ip_version 4 ${TENANT_NET_ID} ${PRIV_CIDR} --gateway_ip ${PRIV_GW})
-SUBNET_ID=$(get_id quantum subnet-create --tenant_id ${TENANT_ID} ${TENANT_NETWORK_NAME} ${PRIV_CIDR} --gateway_ip ${PRIV_GW})
+SUBNET_ID=$(get_id quantum subnet-create --tenant_id ${TENANT_ID} --ip_version 4 ${TENANT_NET_ID} ${PRIV_CIDR} --gateway_ip ${PRIV_GW})
 
 
 
