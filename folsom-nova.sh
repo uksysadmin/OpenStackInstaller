@@ -103,6 +103,7 @@ EOF
 }
 
 nova_networking() {
+	# Defunct - not called
 	# VLAN (for now)
 	sudo nova-manage network create private --fixed_range_v4=$FIXED_RANGE --num_networks=1 --bridge=br100 --bridge_interface=$PRIVATE_INTERFACE --network_size=64 --vlan=$VLAN_START
 	sudo nova-manage floating create --ip_range=$FLOATING_RANGE
