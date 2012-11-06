@@ -18,12 +18,12 @@ ovs_install() {
 ovs_configure() {
 	# VM Communication network bridge
 	sudo ovs-vsctl add-br ${INT_BRIDGE}
-	sudo ovs-vsctl add-port ${INT_BRIDGE}
+	sudo ovs-vsctl add-br br-${PRIVATE_INTERFACE}
+	sudo ovs-vsctl add-port br-${PRIVATE_INTERFACE} ${PRIVATE_INTERFACE}
 
 	# External bridge
 	sudo ovs-vsctl add-br ${EXT_BRIDGE}
-	sudo ovs-vsctl br-set-external-id ${EXT_BRIDGE} bridge-id ${EXT_BRIDGE}
-	sudo ovs-vsctl add-port ${EXT_BRIDGE} ${PUBLIC_INTERFACE}
+	sudo ovs-vsctl add-port ${EXT_BRIDGE} ${PRIVATE_INTERFACE}
 }
 
 # Main
@@ -32,5 +32,5 @@ ovs_configure
 
 # Configure ${EXT_BRIDGE} to reach public network :
 sudo ip addr flush dev ${EXT_BRIDGE}
-sudo ip addr add ${FLOAT_GATEWAY}/255.255.255.0 dev ${EXT_BRIDGE}
+sudo ip addr add ${EXT_BRIDGE_IP}/${EXT_BRIDGE_NETMASK} dev ${EXT_BRIDGE}
 sudo ip link set ${EXT_BRIDGE} up
