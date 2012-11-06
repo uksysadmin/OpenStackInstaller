@@ -25,8 +25,8 @@ Vagrant::Config.run do |config|
     # any other machines on the same network, but cannot be accessed (through this
     # network interface) by any external networks.
     openstack_config.vm.network :hostonly, "172.16.0.201", :netmask => "255.255.0.0"
-    openstack_config.vm.network :hostonly, "10.0.0.201"
-    openstack_config.vm.network :hostonly, "192.168.57.201"
+    openstack_config.vm.network :hostonly, "10.5.5.201"
+    # openstack_config.vm.network :hostonly, "192.168.57.201"
 
     # Customise the VM virtual hardware
     openstack_config.vm.customize ["modifyvm", :id, "--memory", 3172]
