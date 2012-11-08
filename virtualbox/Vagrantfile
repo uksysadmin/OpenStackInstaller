@@ -6,16 +6,16 @@ Vagrant::Config.run do |config|
   # options are documented and commented below. For a complete reference,
   # please see the online documentation at vagrantup.com.
 
-  config.vm.define :openstack do |openstack_config|
+  config.vm.define :controller do |controller_config|
 
     # Every Vagrant virtual environment requires a box to build off of.
-    openstack_config.vm.box = "precise64"
+    controller_config.vm.box = "precise64"
 
-    openstack_config.vm.host_name = "openstack"
+    controller_config.vm.host_name = "controller"
 
     # The url from where the 'config.vm.box' box will be fetched if it
     # doesn't already exist on the user's system.
-    openstack_config.vm.box_url = "http://files.vagrantup.com/precise64.box"
+    controller_config.vm.box_url = "http://files.vagrantup.com/precise64.box"
 
     # Boot with a GUI so you can see the screen. (Default is headless)
     # config.vm.boot_mode = :gui
@@ -24,41 +24,41 @@ Vagrant::Config.run do |config|
     # via the IP. Host-only networks can talk to the host machine as well as
     # any other machines on the same network, but cannot be accessed (through this
     # network interface) by any external networks.
-    openstack_config.vm.network :hostonly, "172.16.0.201", :netmask => "255.255.0.0"
-    openstack_config.vm.network :hostonly, "10.5.5.201"
-    #openstack_config.vm.network :hostonly, "10.5.5.254"
+    controller_config.vm.network :hostonly, "172.16.0.201", :netmask => "255.255.0.0"
+    controller_config.vm.network :hostonly, "10.5.5.201"
+    #controller_config.vm.network :hostonly, "10.5.5.254"
 
     # Customise the VM virtual hardware
-    openstack_config.vm.customize ["modifyvm", :id, "--memory", 3172]
-    openstack_config.vm.customize ["modifyvm", :id, "--cpus", 2]
-    openstack_config.vm.customize ["createhd", "--filename", "openstack-cinder.vdi", "--size", 20480]
-    openstack_config.vm.customize ["storageattach", :id, "--storagectl", "SATA Controller","--port", 1, "--device", 0, "--type", "hdd", "--medium", "openstack-cinder.vdi"] 
+    controller_config.vm.customize ["modifyvm", :id, "--memory", 2048]
+    controller_config.vm.customize ["modifyvm", :id, "--cpus", 1]
+    controller_config.vm.customize ["createhd", "--filename", "controller-cinder.vdi", "--size", 20480]
+    controller_config.vm.customize ["storageattach", :id, "--storagectl", "SATA Controller","--port", 1, "--device", 0, "--type", "hdd", "--medium", "controller-cinder.vdi"] 
   
     # Execute the installation scripts (via SSH)
-    openstack_config.vm.provision :shell, :path => "vagrant-ovs-bootstrap.sh"
-    openstack_config.vm.provision :shell, :path => "vagrant-openstack-bootstrap.sh"
+    controller_config.vm.provision :shell, :path => "vagrant-ovs-bootstrap.sh"
+    controller_config.vm.provision :shell, :path => "vagrant-controller-bootstrap.sh"
   end
 
-  # OpenVSwitch VM
-  # config.vm.define :ovs do |ovs_config|
+  # Compute VM
+  config.vm.define :compute do |compute_config|
 
     # Every Vagrant virtual environment requires a box to build off of.
-    # ovs_config.vm.box = "precise64"
+    compute_config.vm.box = "precise64"
 
-    # ovs_config.vm.host_name = "ovs"
+    compute_config.vm.host_name = "compute"
 
     # The url from where the 'config.vm.box' box will be fetched if it
     # doesn't already exist on the user's system.
-    # ovs_config.vm.box_url = "http://files.vagrantup.com/precise64.box"
+    compute_config.vm.box_url = "http://files.vagrantup.com/precise64.box"
 
-    # ovs_config.vm.network :hostonly, "172.16.0.200", :netmask => "255.255.0.0"
-    # ovs_config.vm.network :hostonly, "10.0.0.200"
+    compute_config.vm.network :hostonly, "172.16.0.202", :netmask => "255.255.0.0"
+    compute_config.vm.network :hostonly, "10.5.5.202"
 
     # Customise the VM virtual hardware
-    # ovs_config.vm.customize ["modifyvm", :id, "--memory", 2048]
-    # ovs_config.vm.customize ["modifyvm", :id, "--cpus", 1]
+    compute_config.vm.customize ["modifyvm", :id, "--memory", 2048]
+    compute_config.vm.customize ["modifyvm", :id, "--cpus", 2]
   
     # Execute the installation scripts (via SSH)
-    # ovs_config.vm.provision :shell, :path => "vagrant-ovs-bootstrap.sh"
-  # end
+    compute_config.vm.provision :shell, :path => "vagrant-compute-bootstrap.sh"
+   end
 end
