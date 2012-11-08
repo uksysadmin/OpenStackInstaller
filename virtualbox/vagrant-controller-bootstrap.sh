@@ -10,3 +10,4 @@ cd OpenStackInstaller
 git checkout folsom
 sed -i 's/192.168.1.12/172.16.0.201/g' openstack.conf
 ./install-folsom.sh controller
+echo "172.16.0.202 compute" >> /etc/hosts
