@@ -46,7 +46,7 @@ EOF
 	sudo chmod 644 $OVS_QUANTUM_PLUGIN_INI
 }
 
-quantum_restart() {
+quantum_agent_restart() {
 	sudo service quantum-plugin-openvswitch-agent restart
 }
 
