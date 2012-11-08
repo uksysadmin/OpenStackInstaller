@@ -56,10 +56,10 @@ EOF
         sudo sed -i "s/%SERVICE_PASSWORD%/$SERVICE_PASS/g" $QUANTUM_L3_AGENT_INI
         sudo sed -i "s/RegionOne/nova/g" $QUANTUM_L3_AGENT_INI
 	sudo sed -i "s/^# metadata_ip.*/metadata_ip = $NOVA_ENDPOINT/g" $QUANTUM_L3_AGENT_INI
-	sudo sed -i "s/^# use_namespaces.*/use_namespaces = True/g" $QUANTUM_L3_AGENT_INI
+	sudo sed -i "s/^# use_namespaces.*/use_namespaces = False/g" $QUANTUM_L3_AGENT_INI
 
 	# dhcp_agent.ini
-	echo "use_namespaces = True" | sudo tee -a $QUANTUM_DHCP_AGENT_INI	
+	echo "use_namespaces = False" | sudo tee -a $QUANTUM_DHCP_AGENT_INI	
 
 	# api-paste.ini
         sudo sed -i "s/127.0.0.1/$KEYSTONE_ENDPOINT/g" $QUANTUM_API_PASTE_INI
