@@ -1,14 +1,19 @@
+THIS IS EXPERIMENTAL AND WORK IN PROGRESS
+
+DO NOT USE UNLESS YOU WANT TO BRANCH AND MAKE MAGIC HAPPEN!
+
+
 OpenStackInstaller
 ==================
 
-Now with added Folsom! Bring out the gimp! :)
+Now with added Grizzly!
 
 VAGRANT + VIRTUALBOX
 ====================
 Check out this post on using these installation scripts with Vagrant and VirtualBox http://uksysadmin.wordpress.com/2012/10/09/easy-openstack-folsom-with-virtualbox-and-vagrant/
 
 1. Check out these scripts using Git
-2. Check out the 'folsom' branch
+2. Check out the 'grizzly' branch
 3. Change to the 'virtualbox' directory
 4. Type: 'vagrant up'
 
