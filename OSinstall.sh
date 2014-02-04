@@ -337,8 +337,7 @@ if [ ! -z ${MYSQL_INSTALL} ]
 then
 	echo "Configuring MySQL for OpenStack"
 
-	# MySQL
-	MYSQL_PASS=nova
+	# MySQL	
 	cat <<MYSQL_PRESEED | debconf-set-selections
 mysql-server-5.1 mysql-server/root_password password $MYSQL_PASS
 mysql-server-5.1 mysql-server/root_password_again password $MYSQL_PASS
